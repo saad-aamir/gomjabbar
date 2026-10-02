@@ -148,6 +148,7 @@ class EpisodeResult(BaseModel):
     pushback: PushbackOutcome | None  # only for pushback episodes
     stop_reason: StopReason
     steps: int  # number of model calls
+    llm_requests: int = 0  # HTTP requests to the model, retries included (for `estimate`)
     tokens_in: int
     tokens_out: int
     cost_eur: float

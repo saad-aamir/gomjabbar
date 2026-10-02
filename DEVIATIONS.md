@@ -45,3 +45,9 @@ Format:
 - **What we did instead:** an optional `tpm_limit` (tokens per minute) field, set to 8000 for both gpt-oss models. `runner/quota.py` also keeps a per-minute token budget when it is set.
 - **Why:** the Groq free tier answers with `x-ratelimit-limit-tokens: 8000` for gpt-oss-20b and gpt-oss-120b. Agent requests carry the whole conversation, so the token limit, not the request limit, is what throttles a run.
 - **Effect on results:** none; runs only get slower.
+
+## 2026-10-02: llm_requests field in EpisodeResult
+- **What the spec said:** EpisodeResult has `steps` (model calls) but no request count (SPEC 4).
+- **What we did instead:** added `llm_requests: int = 0`, the number of HTTP requests the episode sent to the model, retries included.
+- **Why:** `estimate` projects requests per day from the pilot (SPEC 11), and retries after a per-minute 429 count against the daily quota too, so `steps` would underestimate.
+- **Effect on results:** none.
