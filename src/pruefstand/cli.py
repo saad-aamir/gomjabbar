@@ -177,7 +177,12 @@ def estimate(
     typer.echo(f"planned: {len(specs)} episodes ({only.value if only else 'all conditions'})")
     for e in estimate_run(cfg, specs, pilot_results):
         typer.echo(f"== {e.model}")
-        typer.echo(f"   episodes          {e.episodes}  (pilot average over {e.pilot_episodes})")
+        source = (
+            f"no pilot episode of its own: borrowed the average of {e.pilot_episodes} others"
+            if e.borrowed
+            else f"pilot average over {e.pilot_episodes}"
+        )
+        typer.echo(f"   episodes          {e.episodes}  ({source})")
         typer.echo(
             f"   per episode       {e.requests_per_episode:.1f} requests, "
             f"{e.tokens_per_episode:,.0f} tokens, {e.seconds_per_episode:.0f}s"

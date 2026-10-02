@@ -45,3 +45,9 @@ def test_summary_shows_pass_at_1_and_pass_hat_k():
     text = summary_text(results, k=5, seed=1)
     assert "pass@1 (state)    0.500 [" in text
     assert "pass^5 (state)    0.500 [" in text
+
+
+def test_estimate_borrows_for_a_model_without_pilot_episodes():
+    pilot = [make_result(make_spec(model="other"), llm_requests=10)]
+    (e,) = estimate(config(), [make_spec(model="m")], pilot)
+    assert e.borrowed and e.requests_per_episode == 10

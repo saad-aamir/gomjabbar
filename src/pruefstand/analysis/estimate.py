@@ -32,6 +32,7 @@ class ModelEstimate:
     days_by_tokens: int | None  # at tpd_limit, if known
     hours_by_tpm: float | None  # minimum wall time at tpm_limit
     cost_eur: float
+    borrowed: bool = False  # True if the pilot had no episode of this model (pooled average used)
 
 
 def estimate(
@@ -41,8 +42,12 @@ def estimate(
     estimates = []
     for model in config.models:
         rows = [r for r in pilot if r.spec.model == model.name]
+        # A model with no finished pilot episode borrows the average of the others, flagged.
+        borrowed = not rows
+        if borrowed:
+            rows = list(pilot)
         if not rows:
-            raise ValueError(f"the pilot has no results for {model.name}")
+            raise ValueError("the pilot has no results at all")
         n = len(rows)
         req = sum(r.llm_requests for r in rows) / n
         tok = sum(r.tokens_in + r.tokens_out for r in rows) / n
@@ -69,6 +74,7 @@ def estimate(
                 else None,
                 hours_by_tpm=total_tokens / model.tpm_limit / 60 if model.tpm_limit else None,
                 cost_eur=cost * episodes,
+                borrowed=borrowed,
             )
         )
     return estimates

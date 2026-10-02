@@ -12,3 +12,4 @@
 2026-10-02T19:01:46Z run start: 6 specs, 4 to do
 2026-10-02T19:01:46Z [11a90b6ea619b234] start groq/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
 2026-10-02T19:01:46Z [f3d35fcbc0109bdd] start groq/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0
+2026-10-02T19:23:27Z manual: pilot stopped by Claude while both models waited on the 200k tokens-per-day limit; resume tomorrow with pilot --resume
