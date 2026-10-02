@@ -5,7 +5,9 @@ What: a FastMCP server with four tools, read_note, write_note, list_notes and de
 Why: proxy and agent loop tests need a real MCP server that starts fast, needs no network
 and whose final state is easy to check.
 How: tests start it with `python tests/fixtures/fake_server.py`, usually behind the proxy,
-and read the JSON file afterwards to grade the episode.
+and read the JSON file afterwards to grade the episode. Two optional test hooks:
+FAKE_ENV_DUMP (write the server's environment variable names to that file at start) and
+FAKE_CRASH_ON_DELETE (exit the process when delete_note is called, to kill the transport).
 """
 
 import json
@@ -64,6 +66,9 @@ def write_note(name: str, text: str) -> str:
 @mcp.tool()
 def delete_note(name: str) -> str:
     """Delete the note with this name."""
+    if os.environ.get("FAKE_CRASH_ON_DELETE"):
+        # Simulate a server crash: the process dies without answering.
+        os._exit(3)
     notes = _load()
     notes.pop(name, None)
     _save(notes)
@@ -71,5 +76,8 @@ def delete_note(name: str) -> str:
 
 
 if __name__ == "__main__":
+    # Test hook: record which environment variables the server can see.
+    if os.environ.get("FAKE_ENV_DUMP"):
+        Path(os.environ["FAKE_ENV_DUMP"]).write_text("\n".join(sorted(os.environ)))
     # stdio transport: JSON-RPC lines on stdin and stdout.
     mcp.run("stdio")
