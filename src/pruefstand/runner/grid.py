@@ -132,9 +132,11 @@ async def run_grid(
                     # Tests pass a fake clock so durations, and so results.jsonl, are identical.
                     **({"clock": clock, "wall_clock": clock} if clock else {}),
                 )
-            except QuotaPause:
+            except QuotaPause as pause:
                 store.log(
-                    f"daily quota exhausted for {spec.model}; episode not written", episode_id
+                    f"daily quota exhausted for {spec.model}; episode not written; "
+                    f"provider said: {pause.outcome.error}",
+                    episode_id,
                 )
                 quota.mark_exhausted(spec.model)
                 status.paused_models.add(spec.model)

@@ -87,8 +87,20 @@ class RequestGate(Protocol):
 
 # Groq names the limit in the message, e.g. "on requests per day (RPD)" or "tokens per day (TPD)".
 _DAILY_RE = re.compile(r"per day|\(RPD\)|\(TPD\)", re.IGNORECASE)
-# Groq suggests a wait, e.g. "Please try again in 7.66s" or "in 1m2.5s".
-_RETRY_IN_RE = re.compile(r"try again in (?:(\d+)m)?([\d.]+)s", re.IGNORECASE)
+# Groq suggests a wait, e.g. "Please try again in 7.66s", "in 1m2.5s" or "in 2h3m4s".
+_RETRY_IN_RE = re.compile(r"try again in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s", re.IGNORECASE)
+# A per-day 429 that says to retry within this many seconds is waited out, not treated as the
+# end of the day: Groq's daily token limit is a rolling window that can free up in minutes.
+DAILY_WAIT_MAX_S = 900.0
+
+
+def retry_hint_seconds(text: str) -> float | None:
+    """The provider's suggested wait in seconds, or None if the message has no hint."""
+    match = _RETRY_IN_RE.search(text)
+    if not match:
+        return None
+    hours, minutes, seconds = match.groups()
+    return float(hours or 0) * 3600 + float(minutes or 0) * 60 + float(seconds)
 
 
 @dataclass
@@ -108,17 +120,16 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
     backoff = min(2.0**attempt, MAX_BACKOFF_S)
 
     if status == 429 or "rate limit" in text.lower():
-        # A daily limit will not clear by waiting minutes: stop this model for today.
+        hint = retry_hint_seconds(text)
         if _DAILY_RE.search(text):
-            return ErrorVerdict("quota_day", reason=text[:300])
+            # A daily limit that frees up soon (rolling window): wait as told.
+            if hint is not None and hint <= DAILY_WAIT_MAX_S:
+                return ErrorVerdict("retry", hint + 1.0, text[:500])
+            # Otherwise waiting minutes will not help: stop this model for today.
+            return ErrorVerdict("quota_day", reason=text[:500])
         # A per-minute limit: wait as long as the provider says, plus a small margin.
-        match = _RETRY_IN_RE.search(text)
-        if match:
-            minutes = float(match.group(1) or 0)
-            seconds = float(match.group(2))
-            return ErrorVerdict(
-                "retry", min(minutes * 60 + seconds + 0.5, MAX_BACKOFF_S), text[:300]
-            )
+        if hint is not None:
+            return ErrorVerdict("retry", min(hint + 0.5, MAX_BACKOFF_S), text[:300])
         return ErrorVerdict("retry", backoff, text[:300])
 
     if status == 413 or "request too large" in text.lower():

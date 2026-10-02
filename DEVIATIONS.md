@@ -69,3 +69,9 @@ Format:
 - **What we did instead:** a `max_tokens` config field (default and configs: 32768) passed on every model call.
 - **Why:** with no cap, Groq stops gpt-oss replies at 2,048 completion tokens. In the second pilot a reply ended with `finish_reason: length` after 2,048 tokens of reasoning and no output, which the loop had to score as an empty final answer. MCPMark's own LiteLLM agent sets `max_tokens: 32768` (`src/agents/mcpmark_agent.py:852`), so this matches it. The second pilot was stopped and restarted.
 - **Effect on results:** fewer truncated replies; longer replies cost more tokens per minute.
+
+## 2026-10-02: a per-day 429 with a short retry hint is waited out
+- **What the spec said:** a 429 that says the daily quota is exhausted marks that model as done for today (SPEC 5.5).
+- **What we did instead:** if the per-day 429 also says "try again in" 15 minutes or less, the client waits that long and retries (the wait counts as quota time, not agent time). Only a per-day 429 without a hint, or with a longer one, marks the model done for today. The provider's message is now written to run.log when a model pauses.
+- **Why:** in the third pilot gpt-oss-120b was marked done for the day after 33 requests and about 146k tokens, yet a minute later both a tiny and a 4.6k-token request succeeded. Groq's daily token limit appears to be a rolling window, so stopping for the whole day wastes most of it.
+- **Effect on results:** none on episode outcomes; runs pause less often.

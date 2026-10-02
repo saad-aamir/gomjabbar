@@ -49,3 +49,21 @@ def test_server_errors_retry_with_backoff():
 def test_bad_request_is_fatal_but_tool_use_failed_retries():
     assert classify_error(FakeAPIError("invalid model", 400), 1).action == "fatal"
     assert classify_error(FakeAPIError("tool_use_failed", 400), 1).action == "retry"
+
+
+def test_daily_429_with_short_hint_is_waited_out():
+    exc = FakeAPIError(
+        "Rate limit reached on tokens per day (TPD): Limit 200000, Used 199000, "
+        "Requested 5000. Please try again in 2m30s.",
+        429,
+    )
+    verdict = classify_error(exc, 1)
+    assert verdict.action == "retry"
+    assert verdict.wait_s == 151.0
+
+
+def test_daily_429_with_long_hint_is_quota_day():
+    exc = FakeAPIError(
+        "Rate limit reached on requests per day (RPD). Please try again in 3h2m1s.", 429
+    )
+    assert classify_error(exc, 1).action == "quota_day"

@@ -125,12 +125,14 @@ def _execute(
 def pilot(
     config: Path = typer.Option(..., help="config YAML"),
     tasks: int = typer.Option(3, help="first N tasks of the suite"),
+    resume: str | None = typer.Option(None, help="pilot RUN_ID to continue"),
 ) -> None:
     """Baseline only, k=1, on the first N tasks: a smoke test that measures cost per episode."""
     cfg = load_config(config)
     _require_preregistration(cfg)
     cfg = cfg.model_copy(update={"k": 1, "conditions": [Condition.BASELINE]})
-    _execute(cfg, _new_run_id(f"pilot-{cfg.run_name}"), _task_ids(cfg, tasks), None, None)
+    run_id = resume or _new_run_id(f"pilot-{cfg.run_name}")
+    _execute(cfg, run_id, _task_ids(cfg, tasks), None, None)
 
 
 @app.command()
