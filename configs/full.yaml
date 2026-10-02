@@ -25,7 +25,7 @@ seed: 20261002
 k: 5                                     # baseline attempts per task
 paraphrases: 3                           # paraphrase variants per task
 fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
-conditions: [baseline, paraphrase, fault, poison, inject, pushback]
+conditions: [baseline, paraphrase, fault, poison, inject, vault_control, pushback]
 defenses: []                             # e.g. [pinning, sanitizer]
 max_steps: 40
 tool_timeout_s: 30

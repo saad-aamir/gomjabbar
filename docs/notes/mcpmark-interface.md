@@ -13,7 +13,7 @@ What Prüfstand needs to know about MCPMark to reuse its tasks, initial states a
 
 | Host | Used for | Reachable from the cloud session? |
 | --- | --- | --- |
-| `storage.mcpmark.ai` | Filesystem initial states (`/filesystem/<category>.zip`) and Postgres sample databases (`/postgres/<db>.backup`) | **No.** The proxy answers 403 to CONNECT. Saad must add it to the environment's allowed domains. |
+| `storage.mcpmark.ai` | Filesystem initial states (`/filesystem/<category>.zip`) and Postgres sample databases (`/postgres/<db>.backup`) | Yes, since 2026-10-02 (added to the allowed domains by Saad; `file_property.zip` downloaded, HTTP 200). |
 | `registry.npmjs.org` | `npx -y @modelcontextprotocol/server-filesystem@2025.12.18` | Yes |
 | `pypi.org`, `files.pythonhosted.org` | `postgres-mcp==0.3.0` (M2) | Yes |
 | `api.groq.com` | Agent models | Yes (HTTP 200 with `PFS_GROQ_API_KEY`) |
@@ -97,7 +97,7 @@ Filesystem: **yes.** A scan of all 40 filesystem `verify.py` files finds no writ
 
 ### Tasks that pass on the untouched initial state
 
-Not checked yet: needs the initial states from `storage.mcpmark.ai`. M1 step 9 adds the list here.
+Not checked yet: M1 step 9 adds the list here.
 
 ## Postgres service (M2, recorded now because SPEC 2.1 asks)
 
@@ -137,7 +137,15 @@ Mostly, not entirely. Three `standard` verifiers execute statements:
 - `lego/database_security_policies`: `SET ROLE theme_analyst`, then `rollback()`.
 - `security/rls_business_access`: `CREATE ROLE test_user LOGIN PASSWORD 'testpass'`. Roles are cluster wide, not per database, so this is visible across episodes.
 
-None of the `easy` postgres verifiers writes. M3 step 5 must decide how pushback handles these three (snapshot or exclude) and log a deviation.
+None of the `easy` postgres verifiers writes.
+
+### Decision for M2 and later (Saad, 2026-10-02)
+
+Postgres tasks whose verifiers write, including `security/rls_business_access` (the `CREATE ROLE` one), `lego/consistency_enforcement` and `lego/database_security_policies`:
+
+1. **Excluded from pushback.** Pushback runs `verify.py` twice on the same state, which is only valid when the verifier is read-only.
+2. **Never run concurrently with each other.** Their side effects (a cluster wide role, statements inside a transaction on shared objects) can collide. The runner must serialize them, even when `concurrency` > 1.
+3. **Server-wide objects are cleaned up after each episode.** Dropping the per episode database does not drop roles. After each such episode, drop the roles the verifier or the agent created (for example `DROP ROLE IF EXISTS test_user`), so the next episode starts clean.
 
 ## MCP traffic details that matter for the proxy
 

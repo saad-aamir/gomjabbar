@@ -27,7 +27,7 @@ What the SDK actually does (`mcp/client/stdio/__init__.py`, 1.30.0):
 
 ## Environment of the server subprocess
 
-`stdio_client` does **not** pass the parent's full environment. If `StdioServerParameters.env` is `None`, the child gets only `get_default_environment()`: `HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `USER`. In the cloud session that strips `NODE_EXTRA_CA_CERTS` and the proxy variables, and `npx` then fails with `SELF_SIGNED_CERT_IN_CHAIN` (observed). The agent loop therefore passes `env=dict(os.environ)` (plus any per server variables) when it starts the proxy, and the proxy passes its environment on to the real server.
+`stdio_client` does **not** pass the parent's full environment. If `StdioServerParameters.env` is `None`, the child gets only `get_default_environment()`: `HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `USER`. In the cloud session that strips `NODE_EXTRA_CA_CERTS` and the proxy variables, and `npx` then fails with `SELF_SIGNED_CERT_IN_CHAIN` (observed). The agent loop therefore passes the full parent environment, **minus every variable whose name starts with `PFS_`** (so the server under test never sees our API keys; decided 2026-10-02), plus any per server variables, when it starts the proxy. The proxy passes its environment on to the real server.
 
 ## What the client does on a malformed line
 
@@ -40,7 +40,7 @@ Observed with 1.30.0:
 3. The `call_tool` that was waiting for that response never gets one and raises `McpError: Timed out while waiting for response to ClientRequest. Waited 3.0 seconds.`
 4. The next `call_tool` on the same session succeeds.
 
-So in 1.30.0 the `malformed` profile behaves like `timeout` from the agent's point of view: the loop's per call timeout (`tool_timeout_s`) fires and the model sees a tool error. It does **not** kill the transport, so `stop_reason = "transport_failure"` is not expected for `malformed`. Without a read timeout the call would hang forever, so the loop must always pass `read_timeout_seconds`. M2 will re-check this with the proxy in place and the real servers.
+So in 1.30.0 the `malformed` profile behaves like `timeout` from the agent's point of view: the loop's per call timeout (`tool_timeout_s`) fires and the model sees a tool error. It does **not** kill the transport, so `stop_reason = "transport_failure"` is not expected for `malformed`. **Decision (2026-10-02):** `malformed` is an ordinary fault profile; `transport_failure` is only for genuinely dead sessions (SPEC 5.2). Without a read timeout the call would hang forever, so the loop must always pass `read_timeout_seconds`. M2 will re-check this with the proxy in place and the real servers.
 
 ## When the transport really dies
 
