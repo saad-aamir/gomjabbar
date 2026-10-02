@@ -161,9 +161,11 @@ class LiteLLMChat:
         temperature: float | None = None,
         gate: RequestGate | None = None,
         usd_to_eur: float | None = None,
+        max_tokens: int | None = None,
     ):
         self.model = model
         self.temperature = temperature
+        self.max_tokens = max_tokens
         self.gate = gate
         self.usd_to_eur = usd_to_eur
         # Read the key explicitly from the variable the config names (SPEC 5.3).
@@ -187,6 +189,8 @@ class LiteLLMChat:
             kwargs["tools"] = tools
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
+        if self.max_tokens is not None:
+            kwargs["max_tokens"] = self.max_tokens
         estimated = estimate_tokens(messages, tools)
         # Time spent waiting for quota, not for the model. The agent loop excludes it from
         # the episode timeout, so a slow free tier never shows up as a model timeout.

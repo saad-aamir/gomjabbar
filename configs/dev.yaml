@@ -23,6 +23,7 @@ redteam_model:                                  # paraphrases and equivalence ch
   rpm_limit: 30
   rpd_limit: 1000
 temperature: null                        # null = provider default
+max_tokens: 32768                        # output cap per model call, as in MCPMark
 seed: 20261002
 k: 5                                     # baseline attempts per task
 paraphrases: 3                           # paraphrase variants per task

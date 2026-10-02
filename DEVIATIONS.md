@@ -63,3 +63,9 @@ Format:
 - **What we did instead:** the sort order is unchanged and still defines the episode list, but the execution queue takes the models round robin (each model's specs in sort order), so with `concurrency: 2` the two workers usually run different models.
 - **Why:** Groq limits are per model; two workers on the same model share one 8,000 TPM budget and both stall.
 - **Effect on results:** none on the content of results. With concurrency above 1 the line order in `results.jsonl` follows completion order, as before.
+
+## 2026-10-02: max_tokens config field, default 32768
+- **What the spec said:** no output cap is mentioned (SPEC 5.3, 10).
+- **What we did instead:** a `max_tokens` config field (default and configs: 32768) passed on every model call.
+- **Why:** with no cap, Groq stops gpt-oss replies at 2,048 completion tokens. In the second pilot a reply ended with `finish_reason: length` after 2,048 tokens of reasoning and no output, which the loop had to score as an empty final answer. MCPMark's own LiteLLM agent sets `max_tokens: 32768` (`src/agents/mcpmark_agent.py:852`), so this matches it. The second pilot was stopped and restarted.
+- **Effect on results:** fewer truncated replies; longer replies cost more tokens per minute.

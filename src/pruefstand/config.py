@@ -55,6 +55,9 @@ class RunConfig(BaseModel):
     models: list[ModelConfig]
     redteam_model: ModelConfig | None = None
     temperature: float | None = None  # None means the provider default
+    # Output cap per model call. MCPMark uses 32768 (src/agents/mcpmark_agent.py:852); without
+    # it Groq cuts gpt-oss replies at 2048 tokens, often mid-reasoning (DEVIATIONS.md).
+    max_tokens: int = 32768
     seed: int
     k: int = 5  # baseline attempts per task
     paraphrases: int = 3

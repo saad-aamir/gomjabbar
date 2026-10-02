@@ -85,7 +85,9 @@ def _execute(
     info = RunInfo(config=config, config_hash=config.config_hash(), git_commit=git_commit_id())
     quota = QuotaManager(store, config.models)
     clients = {
-        m.name: LiteLLMChat(m, config.temperature, quota.gate(m.name), config.usd_to_eur)
+        m.name: LiteLLMChat(
+            m, config.temperature, quota.gate(m.name), config.usd_to_eur, config.max_tokens
+        )
         for m in config.models
     }
     typer.echo(f"run {run_id}: {len(specs)} episodes, results in {store.run_dir}")
