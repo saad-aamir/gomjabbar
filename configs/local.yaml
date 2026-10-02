@@ -1,0 +1,38 @@
+# Local run on Saad's Mac: adds a free Ollama model. Never used in cloud sessions.
+# Every field is explained in docs/SPEC.md section 10.
+run_name: local
+suite: suites/dev.txt
+services: [filesystem, postgres]
+models:
+  - name: ollama/qwen3:8b                       # local and free, no quota; needs `ollama pull qwen3:8b`
+    free_tier: true
+  - name: groq/openai/gpt-oss-20b               # free tier on Groq; the smaller model of the pair
+    api_key_env: PFS_GROQ_API_KEY
+    free_tier: true                             # costs nothing; limited by quota instead
+    rpm_limit: 30                               # check the limits page in your Groq console and adjust
+    rpd_limit: 1000
+  - name: groq/openai/gpt-oss-120b              # same family, larger: tests whether capability changes attack success
+    api_key_env: PFS_GROQ_API_KEY
+    free_tier: true
+    rpm_limit: 30
+    rpd_limit: 1000
+redteam_model:                                  # paraphrases and equivalence checks; separate daily quota from the agents
+  name: groq/llama-3.3-70b-versatile
+  api_key_env: PFS_GROQ_API_KEY
+  free_tier: true
+  rpm_limit: 30
+  rpd_limit: 1000
+temperature: null                        # null = provider default
+seed: 20261002
+k: 5                                     # baseline attempts per task
+paraphrases: 3                           # paraphrase variants per task
+fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
+conditions: [baseline, paraphrase, fault, poison, inject, pushback]
+defenses: []                             # e.g. [pinning, sanitizer]
+max_steps: 40
+tool_timeout_s: 30
+episode_timeout_s: 900
+concurrency: 1                           # Ollama runs one episode at a time
+spend_cap_eur: 0                         # 0 = free models only; any model without free_tier is refused
+usd_to_eur: null                         # only needed if you ever add a paid model
+keep_sandboxes: false
