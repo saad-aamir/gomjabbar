@@ -39,3 +39,9 @@ Format:
 - **What we did instead:** `.gitignore` ignores `cache/*` and re-includes `cache/paraphrases/`. MCPMark initial states downloaded to `cache/mcpmark_states/` stay out of git.
 - **Why:** the initial states are third-party data (tens of MB per category) and are re-downloadable; the paraphrases must be identical across runs, so they are committed. Approved by Saad.
 - **Effect on results:** none.
+
+## 2026-10-02: tpm_limit model field
+- **What the spec said:** model fields `rpm_limit` and `rpd_limit` (SPEC 10); the quota throttle (SPEC 5.5) counts requests.
+- **What we did instead:** an optional `tpm_limit` (tokens per minute) field, set to 8000 for both gpt-oss models. `runner/quota.py` also keeps a per-minute token budget when it is set.
+- **Why:** the Groq free tier answers with `x-ratelimit-limit-tokens: 8000` for gpt-oss-20b and gpt-oss-120b. Agent requests carry the whole conversation, so the token limit, not the request limit, is what throttles a run.
+- **Effect on results:** none; runs only get slower.

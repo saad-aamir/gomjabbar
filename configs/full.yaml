@@ -9,11 +9,13 @@ models:
     free_tier: true                             # costs nothing; limited by quota instead
     rpm_limit: 30                               # check the limits page in your Groq console and adjust
     rpd_limit: 1000
+    tpm_limit: 8000                             # tokens per minute on the Groq free tier (seen 2026-10-02)
   - name: groq/openai/gpt-oss-120b              # same family, larger: tests whether capability changes attack success
     api_key_env: PFS_GROQ_API_KEY
     free_tier: true
     rpm_limit: 30
     rpd_limit: 1000
+    tpm_limit: 8000                             # tokens per minute on the Groq free tier (seen 2026-10-02)
 redteam_model:                                  # paraphrases and equivalence checks; separate daily quota from the agents
   name: groq/llama-3.3-70b-versatile
   api_key_env: PFS_GROQ_API_KEY
