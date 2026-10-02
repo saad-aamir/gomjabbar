@@ -34,6 +34,7 @@ class ModelConfig(BaseModel):
     rpm_limit: int | None = None  # requests per minute allowed by the provider
     rpd_limit: int | None = None  # requests per day allowed by the provider
     tpm_limit: int | None = None  # tokens per minute allowed by the provider (Groq free tier)
+    tpd_limit: int | None = None  # tokens per day allowed by the provider, if known
     price_usd_per_mtok: float | None = None  # only for paid models LiteLLM cannot price
 
     @model_validator(mode="after")
