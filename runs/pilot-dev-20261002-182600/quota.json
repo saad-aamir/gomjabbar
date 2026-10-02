@@ -2,17 +2,17 @@
   "groq/openai/gpt-oss-120b": {
     "day": "2026-10-02",
     "exhausted": false,
-    "requests": 7,
+    "requests": 25,
     "run_episodes": 0,
-    "run_requests": 7,
-    "tokens": 14480
+    "run_requests": 25,
+    "tokens": 104414
   },
   "groq/openai/gpt-oss-20b": {
     "day": "2026-10-02",
     "exhausted": false,
-    "requests": 7,
+    "requests": 28,
     "run_episodes": 0,
-    "run_requests": 7,
-    "tokens": 13454
+    "run_requests": 28,
+    "tokens": 84656
   }
 }
