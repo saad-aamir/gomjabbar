@@ -1,0 +1,19 @@
+# Dev suite: 10 filesystem + 10 postgres MCPMark task ids (SPEC 2.2).
+# Selection rule: MCPMark's `easy` suite exists for both services, so the dev suite is the
+# whole easy suite of each, sorted by (category, task) as MCPMark discovers them.
+# MCPMark commit: see vendor/MCPMARK_COMMIT.
+# Format: <service>/<suite>/<category>/<task>, matching vendor/mcpmark/tasks/.
+
+# Filesystem (M1)
+filesystem/easy/file_context/file_splitting
+filesystem/easy/file_context/pattern_matching
+filesystem/easy/file_context/uppercase
+filesystem/easy/file_property/largest_rename
+filesystem/easy/file_property/txt_merging
+filesystem/easy/folder_structure/structure_analysis
+filesystem/easy/legal_document/file_reorganize
+filesystem/easy/papers/papers_counting
+filesystem/easy/student_database/duplicate_name
+filesystem/easy/student_database/recommender_name
+
+# Postgres (added in M2)

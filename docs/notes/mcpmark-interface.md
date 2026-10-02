@@ -88,8 +88,9 @@ Categories and zips: `desktop`, `desktop_template`, `file_context`, `file_proper
 ### Exit codes, and telling a harness problem from a task failure
 
 - Exit 0 means pass. MCPMark treats any nonzero exit as a failure and stores stdout.
-- Verifiers catch every exception and `sys.exit(1)`, including a missing `FILESYSTEM_TEST_DIR` (`"FILESYSTEM_TEST_DIR environment variable is required"`). So a harness problem and a task failure **both exit 1**.
-- Prüfstand's grader therefore checks its own preconditions **before** running `verify.py` and raises `GraderError` if any fails: `FILESYSTEM_TEST_DIR` is set, the workspace exists, `verify.py` exists. After the run it raises `GraderError` on: a timeout, an exit code other than 0 or 1, or a Python traceback / `ModuleNotFoundError` / `ImportError` in stderr. Anything else with exit 1 is a task failure.
+- Most verifiers catch their exceptions and `sys.exit(1)`, including a missing `FILESYSTEM_TEST_DIR` (`"FILESYSTEM_TEST_DIR environment variable is required"`). So a harness problem and a task failure **both exit 1**.
+- **Correction (2026-10-02, found in the M1 step 9 sanity check):** not every verifier catches everything. For example `file_context/file_splitting`, `legal_document/file_reorganize`, `file_context/duplicates_searching` and `desktop/project_management` raise an uncaught `FileNotFoundError` (traceback, exit 1) when a folder the agent should have created is missing. MCPMark counts that as a failure, and so must we, so a traceback alone is **not** a harness problem.
+- Prüfstand's grader therefore checks its own preconditions **before** running `verify.py` and raises `GraderError` if any fails: `FILESYSTEM_TEST_DIR` is set, the workspace exists, `verify.py` exists. After the run it raises `GraderError` on: a timeout, an exit code other than 0 or 1, or `ModuleNotFoundError` / `ImportError` / `SyntaxError` in stderr (the verifier could not run at all). Anything else with exit 1, including a traceback from inspecting a wrong state, is a task failure.
 
 ### Is `verify.py` read-only?
 
@@ -97,7 +98,9 @@ Filesystem: **yes.** A scan of all 40 filesystem `verify.py` files finds no writ
 
 ### Tasks that pass on the untouched initial state
 
-Not checked yet: M1 step 9 adds the list here.
+Checked 2026-10-02 (M1 step 9): each task's `verify.py` was run on a fresh copy of its untouched initial state. **None passes**: all 10 `easy` and all 30 `standard` filesystem tasks fail. So a pass always means the agent changed something. (Script: copy the category folder, run `graders/state.py:grade_filesystem`.)
+
+Initial state sizes: the 10 categories unpack to about 117 MB in `cache/mcpmark_states/` (zips included).
 
 ## Postgres service (M2, recorded now because SPEC 2.1 asks)
 
