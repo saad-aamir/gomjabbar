@@ -116,3 +116,23 @@ async def test_rpm_throttle_sleeps(tmp_path):
         await gate.acquire(1)
     # The third request had to wait 30 s (2 per minute).
     assert slept == [pytest.approx(30.0)]
+
+
+async def test_can_start_respects_daily_token_limit(tmp_path):
+    clock = Clock()
+    store = RunStore(tmp_path / "run")
+    model = ModelConfig(name="m", free_tier=True, tpd_limit=200_000)
+
+    async def no_sleep(seconds):
+        clock.t += seconds
+
+    manager = QuotaManager(store, [model], clock=clock, sleep=no_sleep)
+    gate = manager.gate("m")
+    await gate.acquire(1)
+    gate.record(90_000)
+    manager.count_episode("m")
+    assert manager.can_start("m")  # 90k + 90k <= 200k
+    await gate.acquire(1)
+    gate.record(90_000)
+    manager.count_episode("m")
+    assert not manager.can_start("m")  # 180k + 90k > 200k

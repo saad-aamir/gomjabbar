@@ -42,7 +42,7 @@ Format:
 
 ## 2026-10-02: tpm_limit and tpd_limit model fields
 - **What the spec said:** model fields `rpm_limit` and `rpd_limit` (SPEC 10); the quota throttle (SPEC 5.5) counts requests.
-- **What we did instead:** optional `tpm_limit` (tokens per minute) and `tpd_limit` (tokens per day) fields. `tpm_limit` is set to 8000 for both gpt-oss models and `runner/quota.py` keeps a per-minute token budget when it is set. `tpd_limit` is left unset until Saad reads the value from the Groq console (the docs host is not reachable from the cloud session); `estimate` uses it when set, and a "tokens per day" 429 stops the model for the day either way. quota.json records tokens per day.
+- **What we did instead:** optional `tpm_limit` (tokens per minute) and `tpd_limit` (tokens per day) fields. `tpm_limit` is set to 8000 for both gpt-oss models and `runner/quota.py` keeps a per-minute token budget when it is set. `tpd_limit` is set to 200000 for both gpt-oss models, the value in Groq's own 429 message ("tokens per day (TPD): Limit 200000", seen in the third pilot); `estimate` uses it, and `can_start` stops a model for the day when one more average episode would cross it. quota.json records tokens per day.
 - **Why:** the Groq free tier answers with `x-ratelimit-limit-tokens: 8000` for gpt-oss-20b and gpt-oss-120b. Agent requests carry the whole conversation, so the token limit, not the request limit, is what throttles a run.
 - **Effect on results:** none; runs only get slower.
 

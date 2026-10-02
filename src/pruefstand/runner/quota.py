@@ -182,6 +182,7 @@ class QuotaManager:
             entry["exhausted"] = False
         # Run totals survive day changes; they give the average requests per episode.
         entry.setdefault("run_requests", 0)
+        entry.setdefault("run_tokens", 0)
         entry.setdefault("run_episodes", 0)
         return entry
 
@@ -195,7 +196,9 @@ class QuotaManager:
         self._save()
 
     def count_tokens(self, model: str, tokens: int) -> None:
-        self._today(model)["tokens"] += tokens
+        entry = self._today(model)
+        entry["tokens"] += tokens
+        entry["run_tokens"] += tokens
         self._save()
 
     def count_episode(self, model: str) -> None:
@@ -219,13 +222,31 @@ class QuotaManager:
             return DEFAULT_REQUESTS_PER_EPISODE
         return entry["run_requests"] / entry["run_episodes"]
 
+    def tokens_per_episode(self, model: str) -> float:
+        """Running average of tokens per finished episode (0 before the first one)."""
+        entry = self._today(model)
+        if entry["run_episodes"] == 0:
+            return 0.0
+        return entry["run_tokens"] / entry["run_episodes"]
+
     def can_start(self, model: str) -> bool:
-        """False if the model is done for today, or one more average episode would cross rpd."""
+        """False if the model is done for today, or one more average episode would cross the
+        daily request limit (rpd) or the daily token limit (tpd)."""
         entry = self._today(model)
         if entry["exhausted"]:
             return False
-        limit = self.models[model].rpd_limit
-        if limit is not None and entry["requests"] + self.requests_per_episode(model) > limit:
+        config = self.models[model]
+        over_rpd = (
+            config.rpd_limit is not None
+            and entry["requests"] + self.requests_per_episode(model) > config.rpd_limit
+        )
+        # Groq's token limit is a rolling 24 hours, approximated here by the UTC day. If the
+        # window is still full after midnight, the provider's own 429 stops the model again.
+        over_tpd = (
+            config.tpd_limit is not None
+            and entry["tokens"] + self.tokens_per_episode(model) > config.tpd_limit
+        )
+        if over_rpd or over_tpd:
             # Treat it as done for today, so the run can stop cleanly.
             entry["exhausted"] = True
             self._save()
