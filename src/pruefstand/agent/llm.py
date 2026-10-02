@@ -32,6 +32,9 @@ MAX_BACKOFF_S = 65.0
 class LLMError(Exception):
     """A model call failed for good. The episode stops with stop_reason "llm_error"."""
 
+    # HTTP requests the failed call used; they count against the quota like any other.
+    attempts: int = 0
+
 
 class QuotaExhausted(LLMError):
     """The provider's daily quota for this model is used up. The run should pause, not fail."""
@@ -210,9 +213,13 @@ class LiteLLMChat:
                 if verdict.action == "quota_day":
                     if self.gate is not None:
                         self.gate.mark_day_exhausted()
-                    raise QuotaExhausted(verdict.reason) from exc
+                    error: LLMError = QuotaExhausted(verdict.reason)
+                    error.attempts = attempt
+                    raise error from exc
                 if verdict.action == "fatal" or attempt == MAX_ATTEMPTS:
-                    raise LLMError(verdict.reason or str(exc)) from exc
+                    error = LLMError(f"after {attempt} attempts: {verdict.reason or exc}")
+                    error.attempts = attempt
+                    raise error from exc
                 await asyncio.sleep(verdict.wait_s)
                 throttle_s += verdict.wait_s
                 continue

@@ -1,3 +1,5 @@
 2026-10-02T18:26:03Z run start: 6 specs, 6 to do
 2026-10-02T18:26:03Z [11a90b6ea619b234] start groq/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
 2026-10-02T18:26:03Z [95dae4a85ef25078] start groq/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-02T18:47:09Z [95dae4a85ef25078] done passed=False claim=none stop=llm_error steps=24 1266.3s
+2026-10-02T18:47:09Z [f3d35fcbc0109bdd] start groq/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0

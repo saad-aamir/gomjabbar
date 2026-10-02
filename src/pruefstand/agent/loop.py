@@ -334,12 +334,14 @@ class AgentSession:
             try:
                 reply = await self.llm.complete(self.messages, self.tools)
             except QuotaExhausted as exc:
+                outcome.llm_requests += exc.attempts
                 outcome.stop_reason = "llm_error"
                 outcome.quota_exhausted = True
                 outcome.error = str(exc)
                 self.trace.add("error", {"where": "llm", "error": str(exc), "quota": True})
                 return
             except LLMError as exc:
+                outcome.llm_requests += exc.attempts
                 outcome.stop_reason = "llm_error"
                 outcome.error = str(exc)
                 self.trace.add("error", {"where": "llm", "error": str(exc)})
