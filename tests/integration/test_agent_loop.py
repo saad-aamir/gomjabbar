@@ -111,3 +111,23 @@ async def test_server_never_sees_pfs_variables(tmp_path, monkeypatch):
     names = dump.read_text().splitlines()
     assert "SOME_ORDINARY_VAR" in names
     assert not [n for n in names if n.startswith("PFS_")]
+
+
+async def test_quota_waits_do_not_count_toward_episode_timeout(tmp_path):
+    # Each model call takes 0.8 s, all of it quota waiting: 3 calls exceed a 1 s timeout in
+    # wall-clock time, but not in agent time.
+    throttled = call("list_notes")
+    throttled.delay_s = throttled.throttle_s = 0.8
+    done = final("DONE")
+    done.delay_s = done.throttle_s = 0.8
+    limits = LoopLimits(tool_timeout_s=10, episode_timeout_s=1.5)
+    outcome, *_ = await run_script(tmp_path, [throttled, throttled, done], limits)
+    assert outcome.stop_reason == "final_answer"
+
+
+async def test_slow_agent_times_out(tmp_path):
+    slow = call("list_notes")
+    slow.delay_s = 0.8  # real model time, no quota wait
+    limits = LoopLimits(tool_timeout_s=10, episode_timeout_s=1.5)
+    outcome, *_ = await run_script(tmp_path, [slow, slow, slow, final("DONE")], limits)
+    assert outcome.stop_reason == "timeout"

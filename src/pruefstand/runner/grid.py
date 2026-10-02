@@ -47,6 +47,18 @@ def build_specs(
     return sorted(specs, key=lambda s: s.sort_key)
 
 
+def interleave_models(specs: list[EpisodeSpec]) -> list[EpisodeSpec]:
+    """Round robin over models: m1 s1, m2 s1, m1 s2, m2 s2, ... (each model in sort order)."""
+    by_model: dict[str, list[EpisodeSpec]] = {}
+    for spec in sorted(specs, key=lambda s: s.sort_key):
+        by_model.setdefault(spec.model, []).append(spec)
+    queues = [by_model[m] for m in sorted(by_model)]
+    order = []
+    for i in range(max((len(q) for q in queues), default=0)):
+        order.extend(q[i] for q in queues if i < len(q))
+    return order
+
+
 @dataclass
 class RunStatus:
     total: int  # specs in the grid
@@ -74,12 +86,16 @@ async def run_grid(
 ) -> RunStatus:
     """Run every spec that has no result yet. GraderError and other bugs abort the run."""
     completed = store.completed_ids()
-    todo = [s for s in specs if s.episode_id not in completed]
+    # Interleave the full list first, then drop finished episodes, so a resumed run continues
+    # in exactly the order an uninterrupted run would have used.
+    todo = [s for s in interleave_models(specs) if s.episode_id not in completed]
     status = RunStatus(total=len(specs), done=len(specs) - len(todo))
     budget = BudgetGuard(info.config.spend_cap_eur, [r.cost_eur for r in store.read_results()])
     store.log(f"run start: {len(specs)} specs, {len(todo)} to do")
 
-    # Deterministic order: a queue in sort order, consumed by `concurrency` workers.
+    # Deterministic order: a queue consumed by `concurrency` workers. Models are interleaved
+    # (round robin, each model's specs in sort order) so that concurrent workers usually run
+    # different models and each uses its own per-model rate limit instead of sharing one.
     queue: asyncio.Queue[EpisodeSpec] = asyncio.Queue()
     for spec in todo:
         queue.put_nowait(spec)

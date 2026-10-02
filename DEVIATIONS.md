@@ -51,3 +51,15 @@ Format:
 - **What we did instead:** added `llm_requests: int = 0`, the number of HTTP requests the episode sent to the model, retries included.
 - **Why:** `estimate` projects requests per day from the pilot (SPEC 11), and retries after a per-minute 429 count against the daily quota too, so `steps` would underestimate.
 - **Effect on results:** none.
+
+## 2026-10-02: episode timeout counts agent time, not quota waits
+- **What the spec said:** `episode_timeout_s` (900) limits an episode (SPEC 5.3).
+- **What we did instead:** the timeout is checked before each model call against the episode's elapsed time minus the time spent waiting on our own quota throttle and on 429 backoffs. A hard wall-clock cap of 6 x `episode_timeout_s` (quota waits included) remains as a safety net against hangs. Each `llm_response` trace event records `throttle_s` and `finish_reason`.
+- **Why:** in the first pilot the Groq free tier's 8,000 tokens per minute held both running episodes in the throttle for most of their time (22 requests in 11 minutes). With a wall-clock timeout, "timeout" would measure our quota, not the model. The pilot was stopped and restarted with this fix.
+- **Effect on results:** `stop_reason = "timeout"` now means the agent and server used more than 900 s of real work. Episodes take longer in wall-clock time.
+
+## 2026-10-02: concurrent workers interleave models
+- **What the spec said:** specs are sorted by `(model, task_id, condition, variant_id, attempt)` (SPEC 5.5).
+- **What we did instead:** the sort order is unchanged and still defines the episode list, but the execution queue takes the models round robin (each model's specs in sort order), so with `concurrency: 2` the two workers usually run different models.
+- **Why:** Groq limits are per model; two workers on the same model share one 8,000 TPM budget and both stall.
+- **Effect on results:** none on the content of results. With concurrency above 1 the line order in `results.jsonl` follows completion order, as before.

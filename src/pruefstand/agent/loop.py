@@ -36,6 +36,10 @@ from pruefstand.models import StopReason, TraceEvent, TraceKind
 # Tool results longer than this are cut before the model sees them (SPEC 5.3).
 MAX_TOOL_RESULT_CHARS = 20_000
 TRUNCATION_MARKER = "\n[truncated]"
+# The episode timeout counts agent time only (quota waits excluded, see `_steps`). As a
+# safety net against hangs, the whole episode is also capped at this multiple of it in
+# wall-clock time, quota waits included.
+HARD_TIMEOUT_FACTOR = 6
 # Prefix of environment variables that must never reach the server under test.
 SECRET_ENV_PREFIX = "PFS_"
 
@@ -126,6 +130,7 @@ class AgentOutcome:
     model_version: str = ""
     llm_requests: int = 0  # HTTP requests, retries included (for quota estimates)
     quota_exhausted: bool = False  # the model's daily quota ran out mid-episode
+    throttle_s: float = 0.0  # time spent waiting on the quota throttle (not agent time)
     error: str = ""
 
 
@@ -197,6 +202,7 @@ class AgentSession:
         self.messages: list[dict] = []  # the whole conversation so far
         self._tools_changed = False  # set by notifications/tools/list_changed
         self._started = time.monotonic()
+        self._throttle_s = 0.0  # quota waits so far in this session, excluded from agent time
 
     # ---- session start and stop --------------------------------------------------------
 
@@ -283,13 +289,14 @@ class AgentSession:
         outcome = AgentOutcome(
             stop_reason="max_steps", steps=0, final_message="", final_claim="none"
         )
-        # Whatever is left of the episode's time budget.
-        remaining = self.limits.episode_timeout_s - (time.monotonic() - self._started)
+        # Hard wall-clock cap (quota waits included), only a safety net against hangs.
+        hard_limit = self.limits.episode_timeout_s * HARD_TIMEOUT_FACTOR
+        remaining = hard_limit - (time.monotonic() - self._started)
         with anyio.move_on_after(max(remaining, 0)) as scope:
             await self._steps(outcome, max_steps)
         if scope.cancelled_caught:
             outcome.stop_reason = "timeout"
-            self.trace.add("error", {"where": "loop", "error": "episode timeout"})
+            self.trace.add("error", {"where": "loop", "error": "hard wall-clock timeout"})
         # The claim always comes from the last assistant text, even after a limit was hit.
         outcome.final_claim = final_claim_of(outcome.final_message)
         self.trace.add(
@@ -303,9 +310,19 @@ class AgentSession:
         )
         return outcome
 
+    def agent_seconds(self) -> float:
+        """Episode time so far, minus time spent waiting on our quota throttle."""
+        return time.monotonic() - self._started - self._throttle_s
+
     async def _steps(self, outcome: AgentOutcome, max_steps: int) -> None:
         """The body of the loop; fills `outcome` in place so a timeout keeps partial counts."""
         while outcome.steps < max_steps:
+            # The episode timeout measures the agent and the server, not the free tier's
+            # rate limits, so quota waits are left out (DEVIATIONS.md, 2026-10-02).
+            if self.agent_seconds() > self.limits.episode_timeout_s:
+                outcome.stop_reason = "timeout"
+                self.trace.add("error", {"where": "loop", "error": "episode timeout"})
+                return
             # Re-list tools if the server said they changed (pinning defense comes in M3).
             if self._tools_changed:
                 await self._refresh_tools()
@@ -333,9 +350,16 @@ class AgentSession:
             outcome.cost_eur += reply.cost_eur
             outcome.llm_requests += reply.attempts
             outcome.model_version = reply.model_version or outcome.model_version
+            outcome.throttle_s += reply.throttle_s
+            self._throttle_s += reply.throttle_s
             self.trace.add(
                 "llm_response",
-                {"message": reply.message, **reply.extra},
+                {
+                    "message": reply.message,
+                    "finish_reason": reply.finish_reason,
+                    "throttle_s": round(reply.throttle_s, 3),
+                    **reply.extra,
+                },
                 tokens_in=reply.tokens_in,
                 tokens_out=reply.tokens_out,
                 latency_ms=reply.latency_ms,

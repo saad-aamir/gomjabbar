@@ -10,6 +10,7 @@ can check what the model would have been shown (for example tool results).
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 
@@ -23,6 +24,8 @@ class Step:
     tool_calls: list[tuple[str, str]] | None = None  # (name, raw JSON arguments)
     text: str = ""
     error: Exception | None = None
+    delay_s: float = 0.0  # simulated time spent in the call
+    throttle_s: float = 0.0  # how much of that delay is reported as quota waiting
 
 
 def call(tool: str, /, **arguments) -> Step:
@@ -61,6 +64,8 @@ class ScriptedLLM:
         else:
             step = final("FAILED out of script")
         self.position += 1
+        if step.delay_s:
+            await asyncio.sleep(step.delay_s)
         if step.error is not None:
             raise step.error
         calls = [
@@ -84,4 +89,5 @@ class ScriptedLLM:
             tokens_in=10,
             tokens_out=5,
             model_version=self.model_version,
+            throttle_s=step.throttle_s,
         )

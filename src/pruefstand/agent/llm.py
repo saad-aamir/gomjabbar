@@ -59,6 +59,8 @@ class LLMReply:
     model_version: str = ""
     latency_ms: float = 0.0
     attempts: int = 1  # HTTP requests this completion used (retries included)
+    throttle_s: float = 0.0  # time spent waiting on our quota gate and 429 backoffs
+    finish_reason: str = ""  # as reported by the provider ("stop", "tool_calls", "length", ...)
     extra: dict = field(default_factory=dict)  # e.g. reasoning text, kept for the trace
 
 
@@ -120,9 +122,14 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
         # The conversation no longer fits the per-minute token limit; waiting cannot help.
         return ErrorVerdict("fatal", reason="request too large: " + text[:300])
 
-    if "tool_use_failed" in text or "failed to call a function" in text.lower():
-        # The provider could not parse the model's tool call. Sampling again usually works,
-        # so this is retried like a transient error (it still counts against the quota).
+    if (
+        "tool_use_failed" in text
+        or "output_parse_failed" in text
+        or "failed to call a function" in text.lower()
+    ):
+        # The provider could not parse the model's output (Groq: tool_use_failed or
+        # output_parse_failed, seen in the M1 pilot). Sampling again usually works, so this
+        # is retried like a transient error (it still counts against the quota).
         return ErrorVerdict("retry", 1.0, text[:300])
 
     if status is not None and status >= 500:
@@ -181,11 +188,16 @@ class LiteLLMChat:
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         estimated = estimate_tokens(messages, tools)
+        # Time spent waiting for quota, not for the model. The agent loop excludes it from
+        # the episode timeout, so a slow free tier never shows up as a model timeout.
+        throttle_s = 0.0
 
         for attempt in range(1, MAX_ATTEMPTS + 1):
             # Wait for the quota throttle; it raises QuotaExhausted when today's budget is gone.
             if self.gate is not None:
+                waited_from = time.monotonic()
                 await self.gate.acquire(estimated)
+                throttle_s += time.monotonic() - waited_from
             started = time.monotonic()
             try:
                 response = await litellm.acompletion(**kwargs)
@@ -198,10 +210,12 @@ class LiteLLMChat:
                 if verdict.action == "fatal" or attempt == MAX_ATTEMPTS:
                     raise LLMError(verdict.reason or str(exc)) from exc
                 await asyncio.sleep(verdict.wait_s)
+                throttle_s += verdict.wait_s
                 continue
             latency_ms = (time.monotonic() - started) * 1000
             reply = self._to_reply(response, latency_ms)
             reply.attempts = attempt
+            reply.throttle_s = throttle_s
             if self.gate is not None:
                 self.gate.record(reply.tokens_in + reply.tokens_out)
             return reply
@@ -210,7 +224,8 @@ class LiteLLMChat:
 
     def _to_reply(self, response, latency_ms: float) -> LLMReply:
         """Turn a LiteLLM response into an LLMReply."""
-        choice = response.choices[0].message
+        first = response.choices[0]
+        choice = first.message
         tool_calls = [
             ToolCall(id=tc.id, name=tc.function.name, arguments=tc.function.arguments or "{}")
             for tc in (choice.tool_calls or [])
@@ -245,6 +260,7 @@ class LiteLLMChat:
             cost_eur=self._cost_eur(response, tokens_in, tokens_out),
             model_version=version,
             latency_ms=latency_ms,
+            finish_reason=first.finish_reason or "",
             extra={"reasoning": reasoning} if reasoning else {},
         )
 
