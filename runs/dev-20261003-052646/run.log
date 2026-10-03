@@ -745,3 +745,13 @@
 2026-10-03T08:44:29Z [da78a4f4d592e086] done passed=False claim=none stop=llm_error steps=4 7.386s
 2026-10-03T08:44:29Z [3433ab06be440525] start openrouter/openai/gpt-oss-120b filesystem/easy/file_property/txt_merging fault fault-malformed #0
 2026-10-03T08:44:58Z [4befcbe59e101a12] done passed=True claim=done stop=final_answer steps=8 45.117s
+2026-10-03T08:45:00Z checkpoint pushed: run(dev-20261003-052646): checkpoint 50/240
+2026-10-03T08:45:00Z [99482c414d450200] start openrouter/openai/gpt-oss-20b filesystem/easy/file_property/txt_merging fault fault-malformed #0
+2026-10-03T08:45:37Z [99482c414d450200] done passed=True claim=none stop=final_answer steps=10 36.911s
+2026-10-03T08:45:38Z [34062f4cd79ef903] start openrouter/openai/gpt-oss-120b filesystem/easy/file_property/txt_merging fault fault-rate_limit #0
+2026-10-03T08:45:44Z [3433ab06be440525] done passed=True claim=done stop=final_answer steps=8 75.243s
+2026-10-03T08:45:45Z [c49ea54891e25a17] start openrouter/openai/gpt-oss-20b filesystem/easy/file_property/txt_merging fault fault-rate_limit #0
+2026-10-03T08:45:52Z [c49ea54891e25a17] done passed=True claim=done stop=final_answer steps=9 7.175s
+2026-10-03T08:45:52Z [71d7ca25a129744c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_property/txt_merging fault fault-rpc_error #0
+2026-10-03T08:46:16Z [34062f4cd79ef903] done passed=True claim=done stop=final_answer steps=8 37.822s
+2026-10-03T08:46:16Z [a0d93cf00a4753e8] start openrouter/openai/gpt-oss-20b filesystem/easy/file_property/txt_merging fault fault-rpc_error #0
