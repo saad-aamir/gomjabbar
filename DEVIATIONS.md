@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: a rejected key (401) pauses the run; account pauses are not remembered for the day
+- **What the spec said:** SPEC 5.5 handles daily-quota 429s; the entry "out-of-credits answers pause the model like an exhausted quota" (below) made 402 and "Key limit exceeded" pause like a daily quota; any other API error ends the episode as `llm_error`.
+- **What we did instead:** an HTTP 401 (expired or invalid key) is classified like a 402: the model pauses, the episode in flight is not written, and the run prints "paused: the provider rejected the account (...). Fix the key or credit, then resume with --resume <run_id>". These account pauses (401, 402, key limit) are no longer stored as `exhausted` in `quota.json`; only a real daily quota is. Tested (unit and a full run that pauses on 401 and finishes on a same-day resume).
+- **Why:** asked by Saad (the key expires 2026-10-10). Storing an account pause for the whole UTC day meant a same-day `--resume` after adding credit or a new key would have skipped the model until midnight UTC.
+- **Effect on results:** none on scores; a rejected key can no longer turn episodes into `llm_error`.
+
 ## 2026-10-03: pilot rows re-scored with the new final_claim parser
 - **What the spec said:** results.jsonl rows are appended once, after grading (SPEC 4).
 - **What we did instead:** `scripts/rescore_claims.py` rewrote `runs/pilot-dev-20261003-031744/results.jsonl` with `final_claim`, `false_success` and `strict_passed` recomputed from the traces, and `malformed_tool_names` counted from them. The original rows are kept next to it as `results.pre-rescore.jsonl`. `parse_failure_retries` stays 0 because the pilot traces did not record retries.

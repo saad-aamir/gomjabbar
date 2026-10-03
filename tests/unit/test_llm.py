@@ -72,9 +72,38 @@ def test_daily_429_with_long_hint_is_quota_day():
 def test_out_of_credits_stops_the_model_for_now():
     # OpenRouter answers 402 when the account has no credit, 403 when a key's limit is hit.
     exc = FakeAPIError("Insufficient credits. Add more using https://openrouter.ai/...", 402)
-    assert classify_error(exc, 1).action == "quota_day"
+    assert classify_error(exc, 1).action == "account"
     exc = FakeAPIError("Key limit exceeded (total limit). Manage it using ...", 403)
-    assert classify_error(exc, 1).action == "quota_day"
+    assert classify_error(exc, 1).action == "account"
+
+
+def test_rejected_key_pauses_like_missing_credit():
+    # An expired or invalid OpenRouter key answers 401; it must pause, never score.
+    exc = FakeAPIError("AuthenticationError: OpenrouterException - User not found.", 401)
+    verdict = classify_error(exc, 1)
+    assert verdict.action == "account"
+    assert "401" in verdict.reason
+
+
+def test_client_raises_non_daily_pause_on_401(monkeypatch):
+    import asyncio
+
+    import litellm
+    import pytest
+
+    from pruefstand.agent.llm import LiteLLMChat, QuotaExhausted
+    from pruefstand.config import ModelConfig
+
+    async def rejected(**kwargs):
+        raise FakeAPIError("No auth credentials found", 401)
+
+    monkeypatch.setattr(litellm, "acompletion", rejected)
+    model = ModelConfig(name="openrouter/openai/gpt-oss-20b", free_tier=True)
+    with pytest.raises(QuotaExhausted) as info:
+        asyncio.run(LiteLLMChat(model).complete([{"role": "user", "content": "hi"}], []))
+    # Not a daily quota: nothing is remembered in quota.json, so --resume works after a fix.
+    assert info.value.daily is False
+    assert info.value.attempts == 1  # no retries on a rejected key
 
 
 def test_upstream_rate_limit_retries():

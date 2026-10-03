@@ -109,7 +109,13 @@ def _execute(
     typer.echo(summary_text(store.read_results(), config.k, config.seed))
     if status.paused_models and not status.finished:
         all_paused = quota.all_exhausted([m.name for m in config.models])
-        if all_paused:
+        if status.account_problem:
+            # Missing credit or a rejected (expired, invalid) key: nothing was scored.
+            typer.echo(
+                f"\npaused: the provider rejected the account ({status.account_problem[:200]}). "
+                f"Fix the key or credit, then resume with --resume {run_id}"
+            )
+        elif all_paused:
             typer.echo(
                 f"\nquota exhausted: resume after the provider's daily reset with --resume {run_id}"
             )

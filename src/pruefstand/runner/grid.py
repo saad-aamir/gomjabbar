@@ -66,6 +66,7 @@ class RunStatus:
     ran: int = 0  # episodes run by this invocation
     paused_models: set[str] = field(default_factory=set)  # models stopped by quota today
     budget_stop: bool = False
+    account_problem: str = ""  # provider message when credit ran out or the key was rejected
 
     @property
     def finished(self) -> bool:
@@ -133,12 +134,18 @@ async def run_grid(
                     **({"clock": clock, "wall_clock": clock} if clock else {}),
                 )
             except QuotaPause as pause:
+                kind = "daily quota exhausted" if pause.outcome.quota_daily else "account problem"
                 store.log(
-                    f"daily quota exhausted for {spec.model}; episode not written; "
+                    f"{kind} for {spec.model}; episode not written; "
                     f"provider said: {pause.outcome.error}",
                     episode_id,
                 )
-                quota.mark_exhausted(spec.model)
+                # Only a daily quota is remembered in quota.json; missing credit or a rejected
+                # key pauses this invocation, and --resume works once it is fixed.
+                if pause.outcome.quota_daily:
+                    quota.mark_exhausted(spec.model)
+                else:
+                    status.account_problem = pause.outcome.error
                 status.paused_models.add(spec.model)
                 continue
             quota.count_episode(spec.model)

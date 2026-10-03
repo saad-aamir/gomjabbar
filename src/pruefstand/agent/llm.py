@@ -45,7 +45,15 @@ class LLMError(Exception):
 
 
 class QuotaExhausted(LLMError):
-    """The provider's daily quota for this model is used up. The run should pause, not fail."""
+    """The model cannot be used right now. The run should pause, not fail.
+
+    `daily` is True for a provider's daily quota, which is remembered in quota.json until
+    the next UTC day. It is False for account problems (no credit left, an expired or invalid
+    key): those pause only the current invocation, so `--resume` works as soon as they are
+    fixed.
+    """
+
+    daily: bool = True
 
 
 @dataclass
@@ -113,6 +121,7 @@ _HARMONY_PARSE_RE = re.compile(
 )
 # The account has no credit left (OpenRouter answers 402, or 403 once a key's own spending
 # limit is reached). Retrying cannot help, and the episode is not the model's fault.
+# An expired or invalid key (401) is handled the same way.
 _CREDITS_RE = re.compile(
     r"insufficient credits|requires more credits|key limit exceeded|credit limit", re.IGNORECASE
 )
@@ -131,7 +140,7 @@ def retry_hint_seconds(text: str) -> float | None:
 class ErrorVerdict:
     """What to do about one failed request."""
 
-    action: str  # "retry", "quota_day" or "fatal"
+    action: str  # "retry", "quota_day", "account" or "fatal"
     wait_s: float = 0.0  # suggested wait before retrying
     reason: str = ""
     parse_failure: bool = False  # the provider could not parse the model's output
@@ -145,9 +154,14 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
     backoff = min(2.0**attempt, MAX_BACKOFF_S)
 
     if status == 402 or _CREDITS_RE.search(text):
-        # Out of credits: stop this model like an exhausted daily quota, so the run pauses
-        # cleanly and no episode is scored as an llm_error.
-        return ErrorVerdict("quota_day", reason="out of credits: " + text[:500])
+        # Out of credits: pause this model like an exhausted quota, so the run stops cleanly
+        # and no episode is scored as an llm_error.
+        return ErrorVerdict("account", reason="out of credits: " + text[:500])
+
+    if status == 401:
+        # The key expired or is invalid (OpenRouter: "User not found", "No auth credentials").
+        # Like missing credit, this is a billing or setup problem, not a model result.
+        return ErrorVerdict("account", reason="API key rejected (401): " + text[:500])
 
     if status == 429 or "rate limit" in text.lower():
         hint = retry_hint_seconds(text)
@@ -262,10 +276,14 @@ class LiteLLMChat:
                 response = await litellm.acompletion(**kwargs)
             except Exception as exc:  # noqa: BLE001 - every provider error is classified below
                 verdict = classify_error(exc, attempt)
-                if verdict.action == "quota_day":
-                    if self.gate is not None:
+                if verdict.action in ("quota_day", "account"):
+                    # Only a daily quota is remembered for the rest of the day; an account
+                    # problem pauses this invocation and can be fixed before --resume.
+                    daily = verdict.action == "quota_day"
+                    if daily and self.gate is not None:
                         self.gate.mark_day_exhausted()
                     error: LLMError = QuotaExhausted(verdict.reason)
+                    error.daily = daily
                     error.attempts = attempt
                     error.parse_retries = parse_retries
                     raise error from exc

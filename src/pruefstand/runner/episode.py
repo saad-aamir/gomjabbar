@@ -32,10 +32,11 @@ from pruefstand.sandbox.canary import canary_value
 
 
 class QuotaPause(Exception):
-    """The model's daily quota ran out during this episode. Nothing was written."""
+    """The model could not be used any more during this episode (daily quota, no credit, or a
+    rejected key). Nothing was written; the episode reruns on --resume."""
 
     def __init__(self, model: str, outcome: AgentOutcome):
-        super().__init__(f"daily quota exhausted for {model}")
+        super().__init__(f"model paused: {model}")
         self.model = model
         self.outcome = outcome
 
@@ -114,7 +115,7 @@ async def run_episode(
         async with session:
             outcome = await session.run(task.description)
         if outcome.quota_exhausted:
-            # Not a model result: the provider stopped us. Rerun this episode later.
+            # Not a model result: the provider stopped us (quota, credit or key). Rerun later.
             raise QuotaPause(spec.model, outcome)
         merge_proxy_log(trace, store, episode_id)
 

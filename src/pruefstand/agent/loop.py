@@ -148,7 +148,10 @@ class AgentOutcome:
     parse_retries: int = 0
     # Tool calls whose name carries a leaked Harmony token, e.g. "write_file<|channel|>commentary".
     malformed_tool_names: int = 0
-    quota_exhausted: bool = False  # the model's daily quota ran out mid-episode
+    quota_exhausted: bool = False  # the model could not be used any more (quota, credit, key)
+    # True for a provider's daily quota (remembered until the next UTC day), False for an
+    # account problem such as missing credit or a rejected key (pauses this invocation only).
+    quota_daily: bool = True
     throttle_s: float = 0.0  # time spent waiting on the quota throttle (not agent time)
     error: str = ""
 
@@ -372,6 +375,7 @@ class AgentSession:
                 outcome.parse_retries += exc.parse_retries
                 outcome.stop_reason = "llm_error"
                 outcome.quota_exhausted = True
+                outcome.quota_daily = exc.daily
                 outcome.error = str(exc)
                 self.trace.add("error", {"where": "llm", "error": str(exc), "quota": True})
                 return
