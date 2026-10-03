@@ -1,0 +1,24 @@
+# Secrets: API keys live here, never commit it.
+.env
+
+# Python and tool caches.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Run output: only selected files are committed (SPEC 4, Persistence).
+runs/*/traces/
+runs/*/proxy/
+runs/*/sandboxes/
+runs/*/quota.json.lock
+
+# Caches: third-party data stays out of git, paraphrases are committed (SPEC 4).
+cache/*
+!cache/paraphrases/
+
+# Episode sandboxes, in case keep_sandboxes points them inside the repo.
+tmp/

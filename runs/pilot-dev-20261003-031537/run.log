@@ -1,0 +1,6 @@
+2026-10-03T03:15:40Z run start: 6 specs, 6 to do
+2026-10-03T03:15:40Z [b3276d6421ad30a7] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-03T03:15:41Z [7976364fcdc52033] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-03T03:16:12Z [7976364fcdc52033] done passed=False claim=none stop=llm_error steps=7 31.241s
+2026-10-03T03:16:12Z [789acc7ee43fa6a0] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0
+2026-10-03T03:16:29Z manual: pilot stopped by Claude; episode 7976364fcdc52033 ended as llm_error on a CoreWeave Harmony parse error (HTTP 400) that the client did not yet retry. Superseded by a fresh pilot after the fix.

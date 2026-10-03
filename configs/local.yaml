@@ -1,0 +1,42 @@
+# Local run on Saad's Mac: adds a free Ollama model. Never used in cloud sessions.
+# Every field is explained in docs/SPEC.md section 10.
+run_name: local
+suite: suites/dev.txt
+services: [filesystem, postgres]
+models:
+  - name: ollama/qwen3:8b                       # local and free, no quota; needs `ollama pull qwen3:8b`
+    free_tier: true
+  - name: openrouter/openai/gpt-oss-20b         # the smaller model of the pair, paid via OpenRouter
+    api_key_env: PFS_OPENROUTER_API_KEY
+    free_tier: false                            # paid per token; the run's spend_cap_eur limits it
+    provider: coreweave/fp4                     # pinned upstream, no fallbacks (docs/notes/openrouter.md)
+    price_usd_per_mtok: 0.13                    # fallback only: CoreWeave output price; OpenRouter reports real cost
+    rpm_limit: 60                               # our own ceiling; OpenRouter sets no request limit on paid models
+  - name: openrouter/openai/gpt-oss-120b        # same family, larger: tests whether capability changes attack success
+    api_key_env: PFS_OPENROUTER_API_KEY
+    free_tier: false
+    provider: coreweave/fp4
+    price_usd_per_mtok: 0.17                    # fallback only: CoreWeave output price
+    rpm_limit: 60
+redteam_model:                                  # paraphrases and equivalence checks (from M2)
+  name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  price_usd_per_mtok: 0.17
+  rpm_limit: 60
+temperature: null                        # null = provider default
+max_tokens: 32768                        # output cap per model call, as in MCPMark
+seed: 20261002
+k: 5                                     # baseline attempts per task
+paraphrases: 3                           # paraphrase variants per task
+fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
+conditions: [baseline, paraphrase, fault, poison, inject, vault_control, pushback]
+defenses: []                             # e.g. [pinning, sanitizer]
+max_steps: 100                           # model calls per episode, as MCPMark's MAX_TURNS
+tool_timeout_s: 30
+episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's --timeout default
+concurrency: 1                           # Ollama runs one episode at a time
+spend_cap_eur: 0                         # 0 = free models only: this config refuses to start until Saad sets a cap
+usd_to_eur: null                         # set by Saad together with spend_cap_eur
+keep_sandboxes: false

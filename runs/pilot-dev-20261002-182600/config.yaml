@@ -1,0 +1,53 @@
+run_name: dev
+suite: suites/dev.txt
+services:
+- filesystem
+- postgres
+models:
+- name: groq/openai/gpt-oss-20b
+  api_key_env: PFS_GROQ_API_KEY
+  free_tier: true
+  rpm_limit: 30
+  rpd_limit: 1000
+  tpm_limit: 8000
+  tpd_limit: null
+  price_usd_per_mtok: null
+- name: groq/openai/gpt-oss-120b
+  api_key_env: PFS_GROQ_API_KEY
+  free_tier: true
+  rpm_limit: 30
+  rpd_limit: 1000
+  tpm_limit: 8000
+  tpd_limit: null
+  price_usd_per_mtok: null
+redteam_model:
+  name: groq/llama-3.3-70b-versatile
+  api_key_env: PFS_GROQ_API_KEY
+  free_tier: true
+  rpm_limit: 30
+  rpd_limit: 1000
+  tpm_limit: null
+  tpd_limit: null
+  price_usd_per_mtok: null
+temperature: null
+max_tokens: 32768
+seed: 20261002
+k: 1
+paraphrases: 3
+fault_profiles:
+- timeout
+- rpc_error
+- tool_error
+- malformed
+- empty
+- rate_limit
+conditions:
+- baseline
+defenses: []
+max_steps: 40
+tool_timeout_s: 30.0
+episode_timeout_s: 900.0
+concurrency: 2
+spend_cap_eur: 0.0
+usd_to_eur: null
+keep_sandboxes: false

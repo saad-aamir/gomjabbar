@@ -1,0 +1,15 @@
+2026-10-02T18:26:03Z run start: 6 specs, 6 to do
+2026-10-02T18:26:03Z [11a90b6ea619b234] start groq/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-02T18:26:03Z [95dae4a85ef25078] start groq/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-02T18:47:09Z [95dae4a85ef25078] done passed=False claim=none stop=llm_error steps=24 1266.3s
+2026-10-02T18:47:09Z [f3d35fcbc0109bdd] start groq/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0
+2026-10-02T18:52:09Z [11a90b6ea619b234] daily quota exhausted for groq/openai/gpt-oss-120b; episode not written
+2026-10-02T18:52:09Z [f72aba9520fca97a] start groq/openai/gpt-oss-20b filesystem/easy/file_context/pattern_matching baseline orig #0
+2026-10-02T18:53:09Z [f3d35fcbc0109bdd] daily quota exhausted for groq/openai/gpt-oss-120b; episode not written
+2026-10-02T18:53:09Z [77301a33b85cfc1f] start groq/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #0
+2026-10-02T18:58:14Z [f72aba9520fca97a] done passed=False claim=none stop=final_answer steps=9 364.653s
+2026-10-02T19:01:37Z manual: cleared gpt-oss-120b exhausted flag; it came from a rolling per-day 429 misread as end of day (DEVIATIONS.md 2026-10-02), and test calls succeeded afterwards
+2026-10-02T19:01:46Z run start: 6 specs, 4 to do
+2026-10-02T19:01:46Z [11a90b6ea619b234] start groq/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-02T19:01:46Z [f3d35fcbc0109bdd] start groq/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0
+2026-10-02T19:23:27Z manual: pilot stopped by Claude while both models waited on the 200k tokens-per-day limit; resume tomorrow with pilot --resume
