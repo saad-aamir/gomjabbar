@@ -2,19 +2,19 @@
   "openrouter/openai/gpt-oss-120b": {
     "day": "2026-10-03",
     "exhausted": false,
-    "requests": 736,
-    "run_episodes": 16,
-    "run_requests": 736,
-    "run_tokens": 5863299,
-    "tokens": 5863299
+    "requests": 826,
+    "run_episodes": 28,
+    "run_requests": 826,
+    "run_tokens": 6060466,
+    "tokens": 6060466
   },
   "openrouter/openai/gpt-oss-20b": {
     "day": "2026-10-03",
     "exhausted": false,
-    "requests": 489,
-    "run_episodes": 16,
-    "run_requests": 489,
-    "run_tokens": 1840647,
-    "tokens": 1840647
+    "requests": 638,
+    "run_episodes": 29,
+    "run_requests": 638,
+    "run_tokens": 2300546,
+    "tokens": 2300546
   }
 }
