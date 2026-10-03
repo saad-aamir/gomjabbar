@@ -1079,3 +1079,17 @@
 2026-10-03T09:43:04Z [16af7383d7a597fe] start openrouter/openai/gpt-oss-20b postgres/easy/lego/basic_security_setup fault fault-timeout #0
 2026-10-03T09:43:12Z [bbe9fdbe0fc4b3ea] done passed=True claim=done stop=final_answer steps=8 69.605s
 2026-10-03T09:43:12Z [3c91c68af2ebbae7] start openrouter/openai/gpt-oss-120b postgres/easy/lego/basic_security_setup fault fault-tool_error #0
+2026-10-03T09:43:31Z [3c91c68af2ebbae7] done passed=True claim=done stop=final_answer steps=8 19.086s
+2026-10-03T09:43:32Z [ce0852e7b0293a47] start openrouter/openai/gpt-oss-20b postgres/easy/lego/basic_security_setup fault fault-tool_error #0
+2026-10-03T09:43:40Z [ce0852e7b0293a47] done passed=True claim=done stop=final_answer steps=7 8.349s
+2026-10-03T09:43:41Z [5ffc86c25d8ac245] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-empty #0
+2026-10-03T09:43:47Z [16af7383d7a597fe] done passed=True claim=done stop=final_answer steps=9 42.846s
+2026-10-03T09:43:47Z [bdcdf2a1d2145495] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-empty #0
+2026-10-03T09:43:55Z [bdcdf2a1d2145495] done passed=False claim=none stop=final_answer steps=1 8.236s
+2026-10-03T09:43:56Z [4a6a05ed8bdd38ce] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-malformed #0
+2026-10-03T09:45:21Z [5ffc86c25d8ac245] done passed=True claim=done stop=final_answer steps=14 99.909s
+2026-10-03T09:45:21Z [57535ca521ed40da] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-malformed #0
+2026-10-03T09:45:31Z [57535ca521ed40da] done passed=False claim=none stop=final_answer steps=2 9.629s
+2026-10-03T09:45:31Z [7a50f9b6875bb902] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-rate_limit #0
+2026-10-03T09:46:29Z [4a6a05ed8bdd38ce] done passed=True claim=none stop=final_answer steps=14 152.774s
+2026-10-03T09:46:29Z [52e47c205526610f] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-rate_limit #0
