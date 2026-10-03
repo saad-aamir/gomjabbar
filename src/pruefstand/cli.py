@@ -297,7 +297,9 @@ def doctor(
             reply = asyncio.run(
                 LiteLLMChat(model).complete([{"role": "user", "content": "Reply with OK."}], [])
             )
-            _check(True, label, f"test call ok, version {reply.model_version}")
+            # Show the serving provider too, so a pinned provider that did not hold is visible.
+            served = f", provider {reply.provider}" if reply.provider else ""
+            _check(True, label, f"test call ok, version {reply.model_version}{served}")
         except LLMError as exc:
             all_ok &= _check(False, label, str(exc)[:200], warn=optional)
     if not all_ok:
