@@ -603,3 +603,16 @@
 2026-10-03T07:37:56Z [6fe2ebaeaa526d40] start openrouter/openai/gpt-oss-20b postgres/easy/employees/employee_projects_basic paraphrase para-3 #0
 2026-10-03T07:38:02Z [92901039921785ec] done passed=True claim=done stop=final_answer steps=5 13.321s
 2026-10-03T07:38:02Z [59d14b9b057cc227] start openrouter/openai/gpt-oss-120b postgres/easy/employees/hiring_year_summary paraphrase para-1 #0
+2026-10-03T07:38:52Z [59d14b9b057cc227] done passed=True claim=done stop=final_answer steps=7 49.481s
+2026-10-03T07:38:52Z [bf9d029549c02b22] start openrouter/openai/gpt-oss-20b postgres/easy/employees/hiring_year_summary paraphrase para-1 #0
+2026-10-03T07:39:02Z [6fe2ebaeaa526d40] done passed=True claim=none stop=llm_error steps=18 64.837s
+2026-10-03T07:39:02Z [c21b356f10d3a1ca] start openrouter/openai/gpt-oss-120b postgres/easy/employees/hiring_year_summary paraphrase para-2 #0
+2026-10-03T07:39:37Z [bf9d029549c02b22] done passed=True claim=done stop=final_answer steps=12 44.219s
+2026-10-03T07:39:38Z [ae9a3836d603ff46] start openrouter/openai/gpt-oss-20b postgres/easy/employees/hiring_year_summary paraphrase para-2 #0
+2026-10-03T07:40:01Z [ae9a3836d603ff46] done passed=True claim=done stop=final_answer steps=11 23.282s
+2026-10-03T07:40:01Z [aae1ac0e05bcab31] start openrouter/openai/gpt-oss-120b postgres/easy/employees/hiring_year_summary paraphrase para-3 #0
+2026-10-03T07:40:09Z [c21b356f10d3a1ca] done passed=True claim=done stop=final_answer steps=9 65.863s
+2026-10-03T07:40:09Z [404e84899c9a3494] start openrouter/openai/gpt-oss-20b postgres/easy/employees/hiring_year_summary paraphrase para-3 #0
+2026-10-03T07:40:42Z [404e84899c9a3494] done passed=False claim=none stop=final_answer steps=16 32.89s
+2026-10-03T07:40:43Z [8ea86d4ea16dfd0c] start openrouter/openai/gpt-oss-120b postgres/easy/lego/basic_security_setup paraphrase para-1 #0
+2026-10-03T07:41:02Z [aae1ac0e05bcab31] done passed=True claim=done stop=final_answer steps=7 60.621s
