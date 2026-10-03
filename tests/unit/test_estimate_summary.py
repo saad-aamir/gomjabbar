@@ -51,3 +51,38 @@ def test_estimate_borrows_for_a_model_without_pilot_episodes():
     pilot = [make_result(make_spec(model="other"), llm_requests=10)]
     (e,) = estimate(config(), [make_spec(model="m")], pilot)
     assert e.borrowed and e.requests_per_episode == 10
+
+
+def test_estimate_wall_hours_and_usd_for_a_paid_model():
+    from pruefstand.analysis.estimate import wall_hours
+
+    cfg = RunConfig.model_validate(
+        dict(
+            run_name="t",
+            suite="x",
+            services=["filesystem"],
+            models=[
+                {"name": "a", "price_usd_per_mtok": 1.0},
+                {"name": "b", "price_usd_per_mtok": 1.0},
+            ],
+            seed=1,
+            conditions=["baseline"],
+            concurrency=2,
+            spend_cap_eur=5,
+            usd_to_eur=0.5,
+        )
+    )
+    # Every pilot episode takes 360 s and costs 0.02 EUR.
+    pilot = [
+        make_result(make_spec(model=m, attempt=0), duration_s=360.0, cost_eur=0.02)
+        for m in ("a", "b")
+    ]
+    specs = [make_spec(model=m, attempt=i) for m in ("a", "b") for i in range(10)]
+    estimates = estimate(cfg, specs, pilot)
+    for e in estimates:
+        assert round(e.hours_serial, 6) == 1.0  # 10 episodes x 360 s
+        assert round(e.cost_eur, 6) == 0.2
+        assert round(e.cost_usd, 6) == 0.4  # 0.2 EUR / 0.5 EUR per USD
+        assert e.days_by_requests is None and e.days_by_tokens is None  # no daily limits
+    # Two models, one hour each, two workers: one hour of wall time.
+    assert round(wall_hours(cfg, estimates), 6) == 1.0

@@ -21,6 +21,7 @@ from pathlib import Path
 import typer
 
 from pruefstand.analysis.estimate import estimate as estimate_run
+from pruefstand.analysis.estimate import wall_hours
 from pruefstand.analysis.summary import summary_text
 from pruefstand.config import RunConfig, load_config
 from pruefstand.models import Condition
@@ -175,7 +176,8 @@ def estimate(
     specs = build_specs(cfg, "estimate", _task_ids(cfg), only)
     pilot_results = RunStore(pilot).read_results()
     typer.echo(f"planned: {len(specs)} episodes ({only.value if only else 'all conditions'})")
-    for e in estimate_run(cfg, specs, pilot_results):
+    estimates = estimate_run(cfg, specs, pilot_results)
+    for e in estimates:
         typer.echo(f"== {e.model}")
         source = (
             f"no pilot episode of its own: borrowed the average of {e.pilot_episodes} others"
@@ -187,22 +189,28 @@ def estimate(
             f"   per episode       {e.requests_per_episode:.1f} requests, "
             f"{e.tokens_per_episode:,.0f} tokens, {e.seconds_per_episode:.0f}s"
         )
+        usd = f" (USD {e.cost_usd:.2f})" if e.cost_usd is not None else ""
         typer.echo(
             f"   total             {e.total_requests:,} requests, {e.total_tokens:,} tokens, "
-            f"EUR {e.cost_eur:.2f}"
+            f"EUR {e.cost_eur:.2f}{usd}"
         )
+        typer.echo(f"   episode hours     {e.hours_serial:.1f} (one at a time)")
+        # Daily limits only exist for quota-limited (free tier) models.
         if e.days_by_requests is not None:
             typer.echo(f"   days at rpd       {e.days_by_requests}")
-        typer.echo(
-            "   days at tpd       "
-            + (
-                str(e.days_by_tokens)
-                if e.days_by_tokens is not None
-                else "unknown (tpd_limit not set)"
-            )
-        )
+        if e.days_by_tokens is not None:
+            typer.echo(f"   days at tpd       {e.days_by_tokens}")
         if e.hours_by_tpm is not None:
             typer.echo(f"   min. hours at tpm {e.hours_by_tpm:.1f}")
+    # Run-level totals: what Saad approves.
+    total_eur = sum(e.cost_eur for e in estimates)
+    typer.echo("== run")
+    typer.echo(f"   cost              EUR {total_eur:.2f} (spend cap EUR {cfg.spend_cap_eur:g})")
+    typer.echo(
+        f"   wall time         {wall_hours(cfg, estimates):.1f} h at concurrency {cfg.concurrency}"
+    )
+    if cfg.spend_cap_eur > 0 and total_eur > cfg.spend_cap_eur:
+        typer.echo("   WARNING: the estimate is above the spend cap; the run would stop early")
 
 
 @app.command()

@@ -1,9 +1,10 @@
 """Projection of a run's size and duration from a pilot run.
 
 What: for each model, multiply the planned number of episodes by the pilot's average
-requests and tokens per episode, and divide by the model's daily limits to get days.
-Why: free-tier quotas make the full grid a multi-day job (SPEC 11, `estimate`). Saad
-approves a run only after seeing these numbers.
+requests, tokens, seconds and euros per episode, and divide by the model's daily limits
+(if it has any) to get days.
+Why: Saad approves a run only after seeing its cost and duration (SPEC 11, `estimate`).
+Paid models are limited by the spend cap, quota-limited ones by their daily limits.
 How: `pruefstand estimate --pilot runs/<id> --config X` builds the planned specs with
 runner/grid.py and calls `estimate`.
 """
@@ -31,7 +32,9 @@ class ModelEstimate:
     days_by_requests: int | None  # at rpd_limit
     days_by_tokens: int | None  # at tpd_limit, if known
     hours_by_tpm: float | None  # minimum wall time at tpm_limit
+    hours_serial: float  # episodes x average episode seconds, one episode at a time
     cost_eur: float
+    cost_usd: float | None  # cost_eur converted back with usd_to_eur, if it is set
     borrowed: bool = False  # True if the pilot had no episode of this model (pooled average used)
 
 
@@ -73,8 +76,19 @@ def estimate(
                 if model.tpd_limit
                 else None,
                 hours_by_tpm=total_tokens / model.tpm_limit / 60 if model.tpm_limit else None,
+                hours_serial=sec * episodes / 3600,
                 cost_eur=cost * episodes,
+                cost_usd=cost * episodes / config.usd_to_eur if config.usd_to_eur else None,
                 borrowed=borrowed,
             )
         )
     return estimates
+
+
+def wall_hours(config: RunConfig, estimates: list[ModelEstimate]) -> float:
+    """Expected wall time of the whole run in hours, ignoring quota pauses.
+
+    The grid runs `concurrency` episodes at once (models interleaved, DEVIATIONS.md), so the
+    serial episode time of all models is shared among that many workers.
+    """
+    return sum(e.hours_serial for e in estimates) / max(config.concurrency, 1)
