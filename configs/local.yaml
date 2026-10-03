@@ -25,7 +25,7 @@ redteam_model:                                  # paraphrases and equivalence ch
   provider: coreweave/fp4
   price_usd_per_mtok: 0.17
   rpm_limit: 60
-temperature: null                        # null = provider default
+temperature: 1.0                         # sent on every call, as MCPMark does; null would mean the provider default
 max_tokens: 32768                        # output cap per model call, as in MCPMark
 seed: 20261002
 k: 5                                     # baseline attempts per task
@@ -39,4 +39,5 @@ episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's -
 concurrency: 1                           # Ollama runs one episode at a time
 spend_cap_eur: 0                         # 0 = free models only: this config refuses to start until Saad sets a cap
 usd_to_eur: null                         # set by Saad together with spend_cap_eur
+key_spend_cap_usd: 4.5                  # set by Saad; never let the OpenRouter key's total spend pass this (USD, all runs)
 keep_sandboxes: false

@@ -27,6 +27,8 @@ class Step:
     delay_s: float = 0.0  # simulated time spent in the call
     throttle_s: float = 0.0  # how much of that delay is reported as quota waiting
     parse_retries: int = 0  # provider parse failures the real client would have retried
+    reasoning: str = ""  # reasoning text the provider returned next to the reply
+    tokens_out: int = 5  # output tokens the reply reports
 
 
 def call(tool: str, /, **arguments) -> Step:
@@ -42,6 +44,15 @@ def raw_call(name: str, raw_arguments: str) -> Step:
 def final(text: str) -> Step:
     """A final message, which ends the episode."""
     return Step(text=text)
+
+
+def empty(reasoning: str = "Let's list the directory.", tokens_out: int = 10) -> Step:
+    """An empty reply: no text, no tool call, finish_reason "stop" (re-sampled by the loop).
+
+    With few output tokens beyond the reasoning it reads as "stopped after reasoning"; with
+    many (for example tokens_out=60) as "dropped call".
+    """
+    return Step(text="", reasoning=reasoning, tokens_out=tokens_out)
 
 
 def fail(error: Exception | None = None) -> Step:
@@ -91,11 +102,14 @@ class ScriptedLLM:
             tool_calls=calls,
             message=message,
             tokens_in=10,
-            tokens_out=5,
+            tokens_out=step.tokens_out,
             tokens_cached=4,  # as if part of the prompt came from the provider's cache
             model_version=self.model_version,
             provider=self.provider,
             throttle_s=step.throttle_s,
             parse_retries=step.parse_retries,
             attempts=1 + step.parse_retries,
+            # Like the real API: "tool_calls" when the reply calls tools, else "stop".
+            finish_reason="tool_calls" if calls else "stop",
+            extra={"reasoning": step.reasoning} if step.reasoning else {},
         )

@@ -1,0 +1,32 @@
+{
+  "task_id": "postgres/easy/employees/hiring_year_summary",
+  "source_sha1": "5c05cdfb1dc03ccdb7a946a510d8bb8c98098168",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:52:19Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "The objective is to produce a hiring year summary table that enables HR to monitor employee retention trends across different years, indicating the number of hires each year and how many of those hires remain with the company.\n\nYou must create a table named `hiring_year_summary` inside the `employees` schema. This table has to contain exactly the following columns: `hire_year` (integer) representing the year the employee was hired, `employees_hired` (integer) showing the count of hires for that year, `still_employed` (integer) indicating how many of those hires are still employed (identified by an active salary record where `to_date` = '9999-01-01'), and `retention_rate` (decimal) calculated as the percentage of still‑employed staff (`still_employed` / `employees_hired` * 100).\n\nTo build the table, first derive the hire year from the `hire_date` column found in the `employees` table. Then aggregate the data to obtain the total number of employees hired per year. Next, determine which of those employees are presently employed by checking the `salaries` table for rows with `to_date` = '9999-01-01'. Finally, present the results ordered by `hire_year` in ascending order. This dataset will help HR spot retention patterns and highlight years with unusually high or low retention rates.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Goal\n- Construct a table called **`hiring_year_summary`** within the **`employees`** schema.  \n  The table must contain these precise columns:\n\n  * `hire_year` (integer) – year extracted from `hire_date`\n  * `employees_hired` (integer) – number of hires in that year\n  * `still_employed` (integer) – count of those still employed (active salary where `to_date` = '9999-01-01')\n  * `retention_rate` (decimal) – `(still_employed / employees_hired * 100)`  \n\n## Steps to accomplish\n1. Derive the hire year from the `hire_date` column in the `employees` table.  \n2. Tally the total hires for each year.  \n3. Determine which employees remain employed by checking the `salaries` table for rows with `to_date` = '9999-01-01'.  \n4. Calculate the retention percentage, using the factor **100**.  \n5. Present the results ordered by `hire_year` in ascending order.  \n\n## Purpose\nThe resulting summary will allow HR to view employee retention patterns over time and pinpoint years with exceptionally high or low retention rates.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Build a table **hiring_year_summary** in the **employees** schema with these columns (exact names and types):\n\n- `hire_year` (integer) – year extracted from `hire_date` in the **employees** table  \n- `employees_hired` (integer) – count of hires for that year  \n- `still_employed` (integer) – count of those hires that have an active salary record (`to_date = '9999-01-01'`) in **salaries**  \n- `retention_rate` (decimal) – (`still_employed` / `employees_hired`) * 100  \n\nSteps:\n\n1. Derive `hire_year` from `employees.hire_date`.  \n2. Aggregate hires per `hire_year`.  \n3. Join/lookup **salaries** to flag rows where `to_date = '9999-01-01'` and count them as `still_employed`.  \n4. Compute `retention_rate` using the formula above (multiply by 100).  \n5. Order the result by `hire_year` ASC.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000518,
+  "requests": 6
+}

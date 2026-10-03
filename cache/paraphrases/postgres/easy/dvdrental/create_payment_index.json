@@ -1,0 +1,32 @@
+{
+  "task_id": "postgres/easy/dvdrental/create_payment_index",
+  "source_sha1": "1030a19c6cc9f9b2f6d9992e7af1d94ce907b7ee",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:51:16Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "The goal is to add an index that will speed up customer payment queries within the DVD rental database.  \n\nYour assignment is to create an index on the `customer_id` column of the `payment` table so that query performance is enhanced.  \n\nRequirements: construct an index on the `payment` table’s `customer_id` column; the index name may be any identifier you select (e.g., `idx_payment_customer_id`); apply the standard CREATE INDEX syntax.  \n\nWhy this is beneficial: the `customer_id` column is commonly involved in\n- JOIN operations between the customer and payment tables\n- WHERE clauses that filter by customer\n- Subqueries that retrieve payments for specific customers  \n\nIntroducing an index will considerably improve the speed of these operations.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Objective  \nImprove the performance of customer‑payment lookups in the DVD rental database by adding an index.\n\n## Instructions  \n\n### Actions to Perform  \n- The index name can be anything you choose (e.g., `idx_payment_customer_id`)  \n- Create an index on the `payment` table's `customer_id` column  \n- Use the standard CREATE INDEX syntax  \n\n### Goal  \nGenerate an index that accelerates queries involving the `customer_id` column in the `payment` table.\n\n## Rationale  \n\nThe `customer_id` column is commonly employed in:  \n\n- JOIN operations that connect the customer and payment tables  \n- WHERE clauses that filter rows by a specific customer  \n- Subqueries that retrieve payments for particular customers  \n\nAdding an index on this column will markedly reduce the execution time of these operations.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Add an index on the `customer_id` column of the `payment` table to speed up customer‑payment queries in the DVD rental database.\n\n- Use any index name you prefer (e.g., `idx_payment_customer_id`).\n- Apply the standard `CREATE INDEX` syntax.\n\nThis will improve performance for joins, `WHERE` filters, and subqueries that reference `customer_id` in the `payment` table.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000468,
+  "requests": 6
+}

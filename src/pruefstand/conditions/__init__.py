@@ -4,18 +4,23 @@ What: a registry from Condition to the module that implements it.
 Why: the grid runner should not know the details of any condition; adding one (M2) means
 adding a module and one registry line.
 How: `expand(condition, ...)` returns the specs for one task and model; `plan_for(spec)`
-returns the ProxyPlan the proxy should apply to that episode.
+returns the ProxyPlan the proxy should apply to that episode; `prompt_for(spec, task)`
+returns the text the agent is given (the task as written, unless the condition rewords it).
 """
 
 from __future__ import annotations
 
-from pruefstand.conditions import baseline
+from pruefstand.conditions import baseline, fault, paraphrase
 from pruefstand.config import RunConfig
-from pruefstand.models import Condition, EpisodeSpec
+from pruefstand.models import Condition, EpisodeSpec, Task
 from pruefstand.proxy.plan import ProxyPlan
 
-# Conditions implemented so far. M2 adds paraphrase, fault, poison, inject and vault_control.
-IMPLEMENTED = {Condition.BASELINE: baseline}
+# Conditions implemented so far. Poison, inject, rugpull and vault_control arrive in M3.
+IMPLEMENTED = {
+    Condition.BASELINE: baseline,
+    Condition.PARAPHRASE: paraphrase,
+    Condition.FAULT: fault,
+}
 
 
 class NotImplementedCondition(Exception):
@@ -38,3 +43,11 @@ def expand(
 
 def plan_for(spec: EpisodeSpec) -> ProxyPlan:
     return module_for(spec.condition).plan_for(spec)
+
+
+def prompt_for(spec: EpisodeSpec, task: Task) -> str:
+    """The prompt of an episode: the condition's own text if it has one, else the task's."""
+    module = module_for(spec.condition)
+    if hasattr(module, "prompt_for"):
+        return module.prompt_for(spec, task)
+    return task.description

@@ -10,6 +10,78 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: postgres tests are skipped in CI
+- **What the spec said:** CI runs `uv sync`, `ruff check`, `pytest`; no paid calls, no Docker, no Ollama (SPEC 13).
+- **What we did instead:** tests that need the PostgreSQL container are marked `postgres` and skipped when `CI=true` (and wherever the container cannot be started), with the reason printed by `pytest -rs` (`tests/conftest.py`). They run in cloud sessions and locally with Docker.
+- **Why:** asked by Saad after CI failed. Before, the tests started the Docker container on the GitHub runner themselves, against SPEC 13. A Postgres service container in the workflow would also be Docker, so skipping follows the spec.
+- **Effect on results:** none; CI no longer covers postgres isolation, which must be checked in a session with Docker.
+
+## 2026-10-03: one dev run of record for M1 and M2, resumed at a newer commit
+- **What the spec said:** nothing on how runs are organized; the M1 baseline was its own run.
+- **What we did instead:** `runs/dev-20261003-052646` is the run of record for the dev suite. Its filesystem baseline started in a git worktree pinned at the commit that introduced the new rules (`a847da9`), so M2 code changes could not reach running episodes. After 7 episodes it was stopped, moved into the repo and resumed with `--resume` at a later commit for the rest of the baseline (filesystem and postgres), then `--only paraphrase` and `--only fault`. Every row records the commit that ran it (`git_commit`). Episodes in flight when the worktree run stopped were not written and reran on resume. `runs/dev-20261003-033437` (provider-default temperature, no re-sampling) is kept for the record only.
+- **Why:** robustness drop compares each condition with the baseline of the same tasks, models and config, so one results file keeps that comparison simple. The baseline code path did not change between the two commits (an empty proxy plan is byte-identical passthrough, tested). Claude's choice, to save about an hour of wall time.
+- **Effect on results:** none expected; baseline rows carry two different commits.
+
+## 2026-10-03: the partial fault profile is built and tested but not in this run
+- **What the spec said:** M2 step 5: after every P0 profile works, build `partial` (P1) and add it to `fault_profiles` in the configs.
+- **What we did instead:** `partial` is implemented in `proxy/mutators.py` with unit and end-to-end tests, but not added to `fault_profiles` yet.
+- **Why:** adding it changes the run config, and the dev run of record (above) refuses to resume with a different config. It can be added before the next run (40 more fault episodes, about 0.08 EUR at the pilot's costs).
+- **Effect on results:** the M2 fault results cover the six P0 profiles only.
+
+## 2026-10-03: how paraphrases are generated and checked
+- **What the spec said:** SPEC 5.6: P paraphrases per task with the redteam model, cached, each passing a literal check (paths, file names, numbers, quoted strings, table and column names) and an LLM equivalence check, max 3 tries, then drop and log.
+- **What we did instead (choices where the spec is open):** only `description.md` is reworded; MCPMark's fixed suffix is appended unchanged to every paraphrase. The literal check also covers Markdown code spans, snake_case and CamelCase identifiers (column and table names) and every Markdown table cell, and ignores Markdown list numbering on both sides (so "3." in a list neither counts as nor satisfies the number 3). Each variant gets a different style hint (prose, reordered list, short message) so the three differ from each other. The generation prompt (version v2) lists the literals the check will demand; v1 did not, and gpt-oss kept writing small numbers as words ("five"), which dropped every variant of `uppercase`. The equivalence check asks one question covering both directions. Generation is its own command, `pruefstand paraphrase`, guarded by the key spend limit; a run refuses to start paraphrase episodes without a valid cache (missing, or made from a different description). A variant that was dropped has no episode. The cache files record generator, prompt version, every rejection with the failed check, every drop and the cost. `docs/notes/paraphrase-samples.md` shows 5 for review.
+- **Why:** simplest reading of SPEC 5.6 that makes the paraphrases demand the same end state and lets every model see identical text. Claude's choices.
+- **Effect on results:** paraphrase episodes per task can be fewer than 3 where variants were dropped; the report counts tasks, not variants, so this changes only the precision of the estimate.
+
+## 2026-10-03: the empty fault profile keeps structuredContent
+- **What the spec said:** `empty`: forward the result with `content: []` (SPEC 5.2).
+- **What we did instead:** only `content` is emptied; other result fields such as `structuredContent` are forwarded unchanged.
+- **Why:** the MCP SDK validates `structuredContent` against a tool's output schema; removing it would turn `empty` into a schema error on the client, a different fault. The agent loop shows the model only the content blocks, so the model sees an empty result.
+- **Effect on results:** none beyond the profile's intent.
+
+## 2026-10-03: postgres-mcp started with uvx and a pinned MCP SDK
+- **What the spec said:** reuse MCPMark's server launch command, `pipx run postgres-mcp==0.3.0 --access-mode=unrestricted` with `DATABASE_URI` (SPEC 2.1, `docs/notes/mcpmark-interface.md`).
+- **What we did instead:** `uvx --python 3.12 --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted`, same `DATABASE_URI`. `--python 3.12` was added the same day after CI failed: postgres-mcp 0.3.0 requires Python 3.12 or newer, and an inherited `UV_PYTHON=3.11` (set by GitHub's setup-uv) made uvx unable to resolve it, so the server exited before `initialize`. In the cloud VM uvx had picked 3.12 by itself, so results are unaffected.
+- **Why:** `pipx` is not installed in the cloud VM; `uvx` runs the same PyPI package (approved by Saad). `postgres-mcp` 0.3.0 does not pin the MCP SDK, and a fresh install today pulls `mcp` 2.x, on which the server dies at import. 1.30.0 is the 1.x SDK the harness itself uses.
+- **Effect on results:** none expected; same server version and tools. Other transitive dependencies resolve to their current versions.
+
+## 2026-10-03: Postgres in MCPMark's Docker image, not the native PostgreSQL 16
+- **What the spec said:** SPEC 5.1: the native PostgreSQL 16 service when it exists, otherwise one Docker container per run. Saad approved native PG16 for M2.
+- **What we did instead:** one long-lived Docker container `pruefstand-pg` from MCPMark's image `pgvector/pgvector:0.8.0-pg17-bookworm`, user `postgres`, on `127.0.0.1:55432`, kept across runs (templates are restored once per machine). `pg_restore` runs inside the container. The native service is not used; the session hook starts `dockerd` instead of `postgresql`. `doctor` checks the container. SPEC 5.1, `docs/CLOUD.md` and CLAUDE.md updated.
+- **Why:** MCPMark's sample database backups are PostgreSQL 17 dumps (format 1.16); PostgreSQL 16's `pg_restore` refuses them. MCPMark itself uses this exact image. Found after the approval, so this replaces the approved native setup (Claude's choice, reported to Saad). One container for all runs instead of one per run because templates are read only and each episode gets its own clone; restoring employees (34 MB) per run would only add time.
+- **Effect on results:** same PostgreSQL major version and extensions as MCPMark. Also found: a failed `pg_restore` writes `error:` in lower case; MCPMark checks for `ERROR`, so a failed restore can go unnoticed there. Ours ignores case and requires at least one table.
+
+## 2026-10-03: easy dev tasks are exploratory, standard suite held out
+- **What the spec said:** SPEC 2.2 defines `dev.txt` (easy) and `full.txt` (standard); CLAUDE.md forbids the `full` suite before `PRE_REGISTRATION.md` is FINAL. Nothing said whether single standard tasks may be run earlier.
+- **What we did instead:** one line under Setup in `PRE_REGISTRATION.md`: the 20 easy dev tasks are exploratory, the standard suite is held out for the confirmatory run after FINAL. No standard task is run before then. No hypothesis or threshold was changed. The Agent line in the same Setup section now names temperature 1.0 and the empty-reply re-sampling (entries below).
+- **Why:** decided by Saad. Seeing standard results before freezing the hypotheses would weaken the pre-registration.
+- **Effect on results:** M1 and M2 numbers are exploratory only. Intervals on 10 tasks per service stay wide.
+
+## 2026-10-03: absolute spend limit on the OpenRouter key
+- **What the spec said:** `spend_cap_eur` limits one run (SPEC 5.5); nothing about the account.
+- **What we did instead:** new config field `key_spend_cap_usd` (4.5 in all configs, set by Saad). Before every episode the runner reads the key's total usage from OpenRouter (`GET /api/v1/key`, `usage` in USD) and stops cleanly if `concurrency` more average episodes (at least 0.05 USD each) could pass the limit. If the usage cannot be read after 3 tries it does not start the episode (fails closed). Paraphrase generation checks the same limit. Unit and integration tested.
+- **Why:** Saad: "never let total key spend pass $4.50". The per-run cap cannot see spend from earlier runs and probes.
+- **Effect on results:** none on scores; a run may stop early, partial results stay valid.
+
+## 2026-10-03: temperature 1.0 sent explicitly
+- **What the spec said:** `temperature: null`, the provider default (SPEC 5.3, 10); `PRE_REGISTRATION.md` (draft) said provider-default temperature.
+- **What we did instead:** `temperature: 1.0` in dev, full and local configs, SPEC 5.3 and 10 and the draft pre-registration Setup line updated. The code default stays `null`.
+- **Why:** decided by Saad. MCPMark sends `temperature: 1.0` on every call. The empty-reply investigation showed provider defaults differ: DeepInfra's default sampling for gpt-oss-120b is almost deterministic, CoreWeave's is not (`docs/notes/empty-replies.md`).
+- **Effect on results:** the M1 baseline (`runs/dev-20261003-033437`, provider default) is not comparable with later runs; it is kept for the record and replaced by a re-run under the new rules as the M1 baseline of record.
+
+## 2026-10-03: empty replies are re-sampled up to 3 times
+- **What the spec said:** a reply without tool calls is the final answer (SPEC 5.3), as in MCPMark's agent.
+- **What we did instead:** a reply with empty content, no tool calls and `finish_reason: stop` is not shown to the conversation; the identical request is sent again, at most 3 times per step. If the fourth reply is still empty it is the final answer, as before. Re-sampled replies count in tokens, cost and `llm_requests`, not in `steps`. Each empty reply is classified from its hidden output tokens (output tokens minus visible reasoning and content at 4 characters per token): 25 or more is a "dropped call", fewer is "stopped after reasoning". New EpisodeResult fields `empty_reply_resamples`, `empty_replies_dropped_call`, `empty_replies_stopped`; trace events carry `empty_reply` and `resampled`. The report card shows the empty-reply rate per model (empty replies over model replies, where model replies are steps plus re-sampled replies) and a sensitivity score "MCPMark rule": pass@1 and pass^k with every episode that needed a re-sample counted as failed. SPEC 5.3 updated.
+- **Why:** decided by Saad after the investigation in `docs/notes/empty-replies.md`: 21 of 100 M1 baseline episodes ended on such a reply, all failed, and on both CoreWeave and DeepInfra the model had announced a tool call that never arrived. The threshold of 25 hidden tokens sits in the gap seen in the M1 data (2 to 19 versus 32 to 50; normal tool-call replies have a median of 33).
+- **Effect on results:** higher pass rates than MCPMark's agent would get on the same model and stack; the "MCPMark rule" score shows how much. The classification is a heuristic (characters per token vary), so the two kinds are approximate.
+
+## 2026-10-03: a rejected key (401) pauses the run; account pauses are not remembered for the day
+- **What the spec said:** SPEC 5.5 handles daily-quota 429s; the entry "out-of-credits answers pause the model like an exhausted quota" (below) made 402 and "Key limit exceeded" pause like a daily quota; any other API error ends the episode as `llm_error`.
+- **What we did instead:** an HTTP 401 (expired or invalid key) is classified like a 402: the model pauses, the episode in flight is not written, and the run prints "paused: the provider rejected the account (...). Fix the key or credit, then resume with --resume <run_id>". These account pauses (401, 402, key limit) are no longer stored as `exhausted` in `quota.json`; only a real daily quota is. Tested (unit and a full run that pauses on 401 and finishes on a same-day resume).
+- **Why:** asked by Saad (the key expires 2026-10-10). Storing an account pause for the whole UTC day meant a same-day `--resume` after adding credit or a new key would have skipped the model until midnight UTC.
+- **Effect on results:** none on scores; a rejected key can no longer turn episodes into `llm_error`.
+
 ## 2026-10-03: pilot rows re-scored with the new final_claim parser
 - **What the spec said:** results.jsonl rows are appended once, after grading (SPEC 4).
 - **What we did instead:** `scripts/rescore_claims.py` rewrote `runs/pilot-dev-20261003-031744/results.jsonl` with `final_claim`, `false_success` and `strict_passed` recomputed from the traces, and `malformed_tool_names` counted from them. The original rows are kept next to it as `results.pre-rescore.jsonl`. `parse_failure_retries` stays 0 because the pilot traces did not record retries.

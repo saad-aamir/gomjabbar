@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/legal_document/file_reorganize",
+  "source_sha1": "a50a6b4d704a22a277f16c3febaca8cf9affb3cf",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:48Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "In the directory called `legal_files/` you will find a collection of files ranging from `Preferred_Stock_Purchase_Agreement_v0.txt` to `Preferred_Stock_Purchase_Agreement_v10.txt`.  \n\nYour assignment is to determine which of these files represents the final version of the Stock Purchase Agreement. Once you have identified that version, you must make a new directory named `final_version` inside the existing `legal_files/` folder. Within this newly created `final_version/` directory, create an **empty file** that bears exactly the same filename as the final version you identified. The original document should remain untouched in its current location.  \n\nBecause the files are large, only an empty placeholder with the correct name is required in `final_version/`; do not copy any of the file’s contents. The filename must stay unaltered.  \n\nAll identifiers—including `final_version`, `legal_files/`, `final_version/`, `Preferred_Stock_Purchase_Agreement_v0.txt`, `Preferred_Stock_Purchase_Agreement_v10.txt`, `legal_files`, `Preferred_Stock_Purchase_Agreement_v0`, and `Preferred_Stock_Purchase_Agreement_v10`—must appear exactly as shown.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# Document Reorganization Procedure  \n\n**Goal**  \n\nThe directory `legal_files/` holds a series of files ranging from `Preferred_Stock_Purchase_Agreement_v0.txt` to `Preferred_Stock_Purchase_Agreement_v10.txt`.  \n\n## Instructions  \n\n1. Inside `legal_files/`, create a subfolder named `final_version`.  \n2. Examine the files `Preferred_Stock_Purchase_Agreement_v0` … `Preferred_Stock_Purchase_Agreement_v10` (each with the `.txt` extension) and determine which one is the final version.  \n3. In the newly‑made `final_version/` directory, place an **empty file** whose name is exactly the same as the final version you identified.  \n4. Do **not** move or alter the original file; it must remain in its current location.  \n\n> Note: Because the source documents are large, the file you add to `final_version/` should contain no content—only the correct filename.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "legal_files/ holds the series Preferred_Stock_Purchase_Agreement_v0.txt through Preferred_Stock_Purchase_Agreement_v10.txt.  \n\n1. Determine which of these files is the final version.  \n2. Inside legal_files/ create a folder named `final_version`.  \n3. In final_version/ add an **empty file** whose name matches the final version you identified (e.g., Preferred_Stock_Purchase_Agreement_vX.txt).  \n4. Leave the original file untouched in its current location.  \n\n(Only an empty placeholder is required; do not copy the file’s contents.)",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000566,
+  "requests": 6
+}

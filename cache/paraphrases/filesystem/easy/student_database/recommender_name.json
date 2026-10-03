@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/student_database/recommender_name",
+  "source_sha1": "be96044eec9d881732643978eac328ed324e8eb1",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:56Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Locate the recommendation letter for Patricia Jones, ascertain the person who authored it, and produce a file called `recommender.txt` that contains only the name of that author.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "### Goal\n- Locate the recommendation letter that references **Patricia Jones**.  \n- Ascertain the person who authored that letter.\n\n### Deliverable\n- Produce a file called `recommender.txt`.  \n- The file’s contents must be **only** the author’s name.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Find Patricia Jones’s recommendation letter, determine its author, and create a `recommender.txt` file that contains only that name.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.00023,
+  "requests": 6
+}

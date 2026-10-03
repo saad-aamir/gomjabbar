@@ -1,0 +1,39 @@
+{
+  "task_id": "postgres/easy/chinook/customer_data_migration_basic",
+  "source_sha1": "9085a0acf55302919253f4cf183c875154fda6d0",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:51:57Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Chinook Music Store has recently taken over MelodyMart and now must move the latter’s customer information into the PostgreSQL database, employing efficient bulk operations.\n\nAll rows appearing in the data table that follows need to be inserted into the `Customer` table. While doing so, the migration must follow these rules: every new record receives a `CustomerID` that starts at the next available number, each record is linked to the support representative whose EmployeeId equals 3, and the `Fax` column is set to NULL for every migrated entry.\n\n| FirstName | LastName | Company | Address | City | State | Country | PostalCode | Phone | Email |\n|-----------|----------|---------|---------|------|-------|---------|------------|-------|--------|\n| Danielle | Johnson | Sanchez-Taylor | 819 Johnson Course | East William | AK | USA | 74064 | 386-3794 | danielle.johnson@sancheztaylor.com |\n| Katherine | Moore | Peterson-Moore | 16155 Roman Stream Suite 816 | New Kellystad | OK | USA | 25704 | 103-4131 | katherine_moore@petersonmoore.org |\n| Joshua | Reid | Martin-Kelly | 192 Frank Light Suite 835 | East Lydiamouth | MO | USA | 35594 | 139-5376 | joshua_reid@martinkelly.org |",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "**Objective**  \nIntegrate the customer information of the newly acquired retailer **MelodyMart** into the existing **PostgreSQL** database employed by Chinook Music Store.\n\n---\n\n### Required Actions (retain list format)\n\n1. **Extract** every row from the data table provided below and load it into the `Customer` table.  \n2. **During the load, enforce the following business rules**:  \n   - Generate `CustomerID` values beginning with the first free identifier in the destination table.  \n   - Link each new customer to the support representative whose `EmployeeId` equals 3.  \n   - Populate the `Fax` column with **NULL** for every inserted record.\n\n---\n\n### Source Customer Records\n\n| FirstName | LastName | Company | Address | City | State | Country | PostalCode | Phone | Email |\n|-----------|----------|---------|---------|------|-------|---------|------------|-------|--------|\n| Danielle | Johnson | Sanchez-Taylor | 819 Johnson Course | East William | AK | USA | 74064 | 386-3794 | danielle.johnson@sancheztaylor.com |\n| Katherine | Moore | Peterson-Moore | 16155 Roman Stream Suite 816 | New Kellystad | OK | USA | 25704 | 103-4131 | katherine_moore@petersonmoore.org |\n| Joshua | Reid | Martin-Kelly | 192 Frank Light Suite 835 | East Lydiamouth | MO | USA | 35594 | 139-5376 | joshua_reid@martinkelly.org |",
+      "tries": 2,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Migrate every row in the table below into the PostgreSQL `Customer` table using bulk operations.\n\n**Requirements**\n1. Load all records from the provided data into `Customer`.\n2. While loading:\n   - generate `CustomerID` values starting with the next free number,\n   - set `EmployeeId` = 3 for every new row,\n   - store `NULL` in the `Fax` column.\n\n**Data from MelodyMart**\n\n| FirstName | LastName | Company | Address | City | State | Country | PostalCode | Phone | Email |\n|-----------|----------|---------|---------|------|-------|---------|------------|-------|--------|\n| Danielle | Johnson | Sanchez-Taylor | 819 Johnson Course | East William | AK | USA | 74064 | 386-3794 | danielle.johnson@sancheztaylor.com |\n| Katherine | Moore | Peterson-Moore | 16155 Roman Stream Suite 816 | New Kellystad | OK | USA | 25704 | 103-4131 | katherine_moore@petersonmoore.org |\n| Joshua | Reid | Martin-Kelly | 192 Frank Light Suite 835 | East Lydiamouth | MO | USA | 35594 | 139-5376 | joshua_reid@martinkelly.org |",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [
+    {
+      "variant_id": "para-2",
+      "try": 1,
+      "check": "equivalence",
+      "reason": "not equivalent: Task B explicitly requires preserving every identifier exactly as shown (including table and column names, case, and values), a restriction not stated in Task A.; Task B adds a meta‑constraint \"Do not supply the solution or any hints,\" which is absent from Task A and would disallow providing an actual migration script or detailed instructions that would be acceptable for A."
+    }
+  ],
+  "dropped": [],
+  "cost_eur": 0.000974,
+  "requests": 8
+}

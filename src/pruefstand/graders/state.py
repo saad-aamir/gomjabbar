@@ -6,7 +6,8 @@ Why: correctness is judged by the final state, never by the agent's words (SPEC 
 MCPMark verifiers exit 1 both for a failed task and for a broken setup, this grader checks
 its own preconditions first and raises GraderError for anything that looks like a harness
 problem. A GraderError aborts the write of the result and stops the run (CLAUDE.md).
-How: the episode runner calls `grade_filesystem(task, workspace)` after the agent finishes.
+How: the episode runner calls `grade_filesystem(task, workspace)` or
+`grade_postgres(task, database)` after the agent finishes.
 Rules are in docs/notes/mcpmark-interface.md ("Exit codes").
 """
 
@@ -83,3 +84,23 @@ def grade_filesystem(task: Task, workspace: Path) -> StateVerdict:
         raise GraderError(f"workspace {workspace} does not exist")
     # FILESYSTEM_TEST_DIR is the only variable filesystem verifiers read.
     return run_verify(task, {"FILESYSTEM_TEST_DIR": str(workspace)})
+
+
+def grade_postgres(task: Task, database: str) -> StateVerdict:
+    """Grade a postgres task against the episode's own database.
+
+    Preconditions first (a missing database is a harness problem, not a task failure),
+    then verify.py with the POSTGRES_* variables MCPMark sets.
+    """
+    # Imported here so filesystem-only runs never need the postgres module.
+    from pruefstand.sandbox.postgres import database_exists, verify_environment
+
+    if task.service != Service.POSTGRES:
+        raise GraderError(f"{task.id} is not a postgres task")
+    try:
+        exists = database_exists(database)
+    except Exception as exc:  # noqa: BLE001 - the service itself is unreachable
+        raise GraderError(f"postgres unreachable while grading {task.id}: {exc}") from exc
+    if not exists:
+        raise GraderError(f"episode database {database} does not exist")
+    return run_verify(task, verify_environment(database))

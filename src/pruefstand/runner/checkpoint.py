@@ -23,9 +23,15 @@ def _git(*args: str) -> subprocess.CompletedProcess:
 
 
 def git_commit_id() -> str:
-    """The current commit, with "-dirty" if tracked files have uncommitted changes."""
+    """The current commit, with "-dirty" if tracked files have uncommitted changes.
+
+    Files under runs/ are run output, not code: a run in progress keeps changing its
+    results.jsonl and run.log, which must not mark the code as dirty.
+    """
     head = _git("rev-parse", "HEAD").stdout.strip() or "unknown"
-    dirty = _git("status", "--porcelain", "--untracked-files=no").stdout.strip()
+    dirty = _git(
+        "status", "--porcelain", "--untracked-files=no", "--", ".", ":(exclude)runs"
+    ).stdout.strip()
     return f"{head}-dirty" if dirty else head
 
 

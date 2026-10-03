@@ -17,3 +17,13 @@ filesystem/easy/student_database/duplicate_name
 filesystem/easy/student_database/recommender_name
 
 # Postgres (added in M2)
+postgres/easy/chinook/customer_data_migration_basic
+postgres/easy/chinook/update_employee_info
+postgres/easy/dvdrental/create_payment_index
+postgres/easy/employees/department_summary_view
+postgres/easy/employees/employee_gender_statistics
+postgres/easy/employees/employee_projects_basic
+postgres/easy/employees/hiring_year_summary
+postgres/easy/lego/basic_security_setup
+postgres/easy/lego/fix_data_inconsistencies
+postgres/easy/sports/create_performance_indexes

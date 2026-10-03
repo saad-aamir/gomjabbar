@@ -153,6 +153,12 @@ class EpisodeResult(BaseModel):
     parse_failure_retries: int = 0
     # Tool calls whose name carried a leaked Harmony token, e.g. "write_file<|channel|>...".
     malformed_tool_names: int = 0
+    # Requests re-sent after an empty reply (no text, no tool call, finish_reason "stop"),
+    # at most 3 per step. MCPMark's agent would have ended the task at the first one.
+    empty_reply_resamples: int = 0
+    # Every empty reply, re-sampled or not, by kind (docs/notes/empty-replies.md):
+    empty_replies_dropped_call: int = 0  # a tool call was generated but lost by the provider
+    empty_replies_stopped: int = 0  # the model ended its turn after its reasoning
     tokens_in: int
     tokens_out: int
     tokens_cached_in: int = 0  # part of tokens_in served from the provider's prompt cache

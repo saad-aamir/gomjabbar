@@ -127,6 +127,8 @@ env: DATABASE_URI=postgresql://<user>:<password>@<host>:<port>/<database>
 
 `pipx` is not installed in the cloud VM. `uvx postgres-mcp==0.3.0 --access-mode=unrestricted` runs the same PyPI package; M2 will use that and log a deviation.
 
+**Found in M2 (2026-10-03):** `postgres-mcp==0.3.0` declares no upper bound on the MCP SDK, so a fresh install today resolves `mcp` 2.x and the server dies on import (`No module named 'mcp.server.fastmcp'`). MCPMark's own `pipx run` would fail the same way now. Prüfstand runs `uvx --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted` (the 1.x SDK the harness uses), with `DATABASE_URI` in the environment. It reports itself as `postgres-mcp` and negotiates protocol `2025-11-25`. Its 9 tools: `list_schemas`, `list_objects`, `get_object_details`, `explain_query`, `analyze_workload_indexes`, `analyze_query_indexes`, `analyze_db_health`, `get_top_queries`, `execute_sql`. `execute_sql(sql)` is the only one that writes.
+
 ### How the initial state is created
 
 `src/mcp_services/postgres/postgres_state_manager.py`:
@@ -136,6 +138,10 @@ env: DATABASE_URI=postgresql://<user>:<password>@<host>:<port>/<database>
 3. Afterwards drop the per task database.
 
 This matches SPEC 5.1 (template databases, one clone per episode).
+
+**PostgreSQL version (found in M2, 2026-10-03):** the five backups are `pg_dump` custom format 1.16, written by PostgreSQL 17. The PostgreSQL 16 `pg_restore` on the cloud VM refuses them (`unsupported version (1.16) in file header`). MCPMark itself runs the Docker image `pgvector/pgvector:0.8.0-pg17-bookworm` (`run-task.sh:103`, `docs/mcp/postgres.md`) with user `postgres`. Prüfstand does the same: one long-lived container `pruefstand-pg` on `127.0.0.1:55432`, `pg_restore` run inside it, templates named `pfs_tpl_<db>`. MCPMark's own restore check looks for `ERROR` in upper case, but `pg_restore` writes `error:`, so a failed restore can pass unnoticed there; ours ignores case and also requires at least one table.
+
+**Untouched state:** none of the 10 `easy` postgres tasks passes `verify.py` on a fresh clone of its template (checked 2026-10-03). All 10 verifiers run with `psycopg2-binary` installed in the project environment.
 
 ### How `verify.py` finds the environment
 

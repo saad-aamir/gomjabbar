@@ -23,7 +23,7 @@ redteam_model:                                  # paraphrases and equivalence ch
   provider: coreweave/fp4
   price_usd_per_mtok: 0.17
   rpm_limit: 60
-temperature: null                        # null = provider default
+temperature: 1.0                         # sent on every call, as MCPMark does; null would mean the provider default
 max_tokens: 32768                        # output cap per model call, as in MCPMark
 seed: 20261002
 k: 5                                     # baseline attempts per task
@@ -37,4 +37,5 @@ episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's -
 concurrency: 2                           # one episode per model at a time (models interleave)
 spend_cap_eur: 5                         # set by Saad; the run stops before it would spend more
 usd_to_eur: 0.88                         # set by Saad; converts the provider's USD cost to euros
+key_spend_cap_usd: 4.5                  # set by Saad; never let the OpenRouter key's total spend pass this (USD, all runs)
 keep_sandboxes: false

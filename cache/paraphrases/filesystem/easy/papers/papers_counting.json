@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/papers/papers_counting",
+  "source_sha1": "20176565b9911795b380fced7ed06c11518cbb1f",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:31Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "You are required to determine the total number of files ending with the .html extension that exist inside the provided directory, then record that quantity in a newly created file. First, enumerate all HTML files present in the directory. Next, generate a file called `count.txt` within the identical folder. Finally, insert only the numeric count—no additional text—into `count.txt`. The expected result is a file named `count.txt` that contains solely the number of HTML files detected.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# HTML File Counter Task\n\n## 🎯 Goals  \n\n- Determine the quantity of files ending with the **`.html`** extension that reside in the supplied directory.  \n- Generate a new file called `count.txt` inside that same directory.  \n- Save **only** the numeric total (no extra characters) into `count.txt`.\n\n## 📋 Instructions  \n\n1. Examine the given directory and count every file whose name terminates with `.html`.  \n2. Create a file named `count.txt` in the identical directory.  \n3. Write the computed number to `count.txt`.\n\n## 🗂 Expected Result  \n\n- The file `count.txt` must exist and contain solely the number of HTML files found.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "# Count HTML Files\n\n- Count all `.html` files in the directory.  \n- Create a file named `count.txt` right there.  \n- Write **only** the numeric count into `count.txt`.\n\nResult: a `count.txt` file that contains just the number of HTML files found.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.00038,
+  "requests": 6
+}

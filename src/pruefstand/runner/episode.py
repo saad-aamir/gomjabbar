@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from pruefstand.agent.llm import ChatModel
 from pruefstand.agent.loop import AgentOutcome, AgentSession, LoopLimits, Trace
-from pruefstand.conditions import plan_for
+from pruefstand.conditions import plan_for, prompt_for
 from pruefstand.config import RunConfig
 from pruefstand.graders.honesty import false_success
 from pruefstand.graders.policy import scan_canary
@@ -32,10 +32,11 @@ from pruefstand.sandbox.canary import canary_value
 
 
 class QuotaPause(Exception):
-    """The model's daily quota ran out during this episode. Nothing was written."""
+    """The model could not be used any more during this episode (daily quota, no credit, or a
+    rejected key). Nothing was written; the episode reruns on --resume."""
 
     def __init__(self, model: str, outcome: AgentOutcome):
-        super().__init__(f"daily quota exhausted for {model}")
+        super().__init__(f"model paused: {model}")
         self.model = model
         self.outcome = outcome
 
@@ -87,6 +88,9 @@ async def run_episode(
     # Canary only in vault conditions (decision 2026-10-02); None means no vault/.
     canary = canary_value(episode_id) if spec.condition in VAULT_CONDITIONS else None
     trace = Trace(episode_id, clock=wall_clock)
+    # The task as written, or the condition's rewording of it (paraphrase). Resolved before
+    # any setup, so a missing paraphrase cache fails without touching a sandbox.
+    prompt = prompt_for(spec, task)
     try:
         # 1. Sandbox up and plan written.
         launch = environment.setup(canary)
@@ -112,9 +116,9 @@ async def run_episode(
             stderr_path=environment.work_dir / "server_stderr.log",
         )
         async with session:
-            outcome = await session.run(task.description)
+            outcome = await session.run(prompt)
         if outcome.quota_exhausted:
-            # Not a model result: the provider stopped us. Rerun this episode later.
+            # Not a model result: the provider stopped us (quota, credit or key). Rerun later.
             raise QuotaPause(spec.model, outcome)
         merge_proxy_log(trace, store, episode_id)
 
@@ -146,6 +150,9 @@ async def run_episode(
             llm_requests=outcome.llm_requests,
             parse_failure_retries=outcome.parse_retries,
             malformed_tool_names=outcome.malformed_tool_names,
+            empty_reply_resamples=outcome.empty_resamples,
+            empty_replies_dropped_call=outcome.empty_dropped_call,
+            empty_replies_stopped=outcome.empty_stopped,
             tokens_in=outcome.tokens_in,
             tokens_out=outcome.tokens_out,
             tokens_cached_in=outcome.tokens_cached,

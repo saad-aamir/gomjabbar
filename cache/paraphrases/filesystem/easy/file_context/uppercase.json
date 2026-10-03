@@ -1,0 +1,45 @@
+{
+  "task_id": "filesystem/easy/file_context/uppercase",
+  "source_sha1": "c21ba0e10ae9dd5a8af5adadc32e1ad601d31965",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:46Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "In the test environment root you must create a new folder called uppercase and then work with five text files—file_01.txt, file_02.txt, file_03.txt, file_04.txt and file_05.txt. Each of these files, from file_01.txt through file_05.txt, has to be altered so that every character it contains is changed to uppercase.\n\nAfter the conversion, write the resulting files back into the uppercase/ directory, keeping the original filenames exactly as they were (file_01.txt, file_02.txt, file_03.txt, file_04.txt, file_05.txt). The task therefore requires you to handle the files named file_01 and file_05 as part of the set of 5 files and to place the uppercase versions in the newly created uppercase directory.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# Uppercase Conversion Assignment\n\n## 📂 Required Setup\n- Create a directory called `uppercase` at the root level of the test environment.\n\n## 🗂 Files to Process\n- The task involves **5** text files: `file_01.txt`, `file_02.txt`, `file_03.txt`, `file_04.txt`, `file_05.txt`.  \n- Note the base identifiers `file_01` and `file_05` as part of the file set.\n\n## 🔄 Conversion Procedure\n1. Open each file from `file_01.txt` through `file_05.txt`.\n2. Convert the entire contents of every file to uppercase.\n3. Save each resulting file, keeping its original name, inside the newly created `uppercase/` folder.",
+      "tries": 3,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "# Uppercase Conversion  \n\nProcess the **5** files `file_01.txt`‑`file_05.txt`. Create a folder named `uppercase` in the test‑environment root, turn each file’s contents to uppercase, and place the results in `uppercase/` keeping the original filenames.\n\n- make the `uppercase` directory  \n- for every file from `file_01` to `file_05` (i.e., `file_01.txt` through `file_05.txt`):  \n    * read → convert to uppercase → save as `uppercase/<same name>`",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [
+    {
+      "variant_id": "para-2",
+      "try": 1,
+      "check": "literal",
+      "reason": "missing literals: '5'"
+    },
+    {
+      "variant_id": "para-2",
+      "try": 2,
+      "check": "equivalence",
+      "reason": "not equivalent: B explicitly requires that no additional files or modifications be made beyond the five specified files, while A does not forbid extra changes.; B emphasizes preserving the base filenames and states exactly five files, whereas A only mentions converting \"file_01.txt to file_05.txt\" without explicitly stating that only those files may be touched."
+    }
+  ],
+  "dropped": [],
+  "cost_eur": 0.000913,
+  "requests": 9
+}

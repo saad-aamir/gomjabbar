@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/file_context/file_splitting",
+  "source_sha1": "2399e61751730dfbeaaa24f2a524e17a5122655c",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:48:48Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "First, create a new folder called split inside the test directory. Then, take the text contained in the file large_file.txt and divide it into exactly 3 separate pieces, making sure that the number of characters in any one piece differs from any other piece by no more than 100. Finally, write those three pieces to files named split_01.txt, split_02.txt, and split_03.txt, placing each of them in the split directory.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Overview  \n\nThe objective is to take the text file `large_file.txt` and divide its contents into three separate pieces, each containing a nearly equal number of characters. The allowable variance between the largest and smallest piece is **100** characters.\n\n## Requirements  \n\n1. **Directory creation** – In the test directory, generate a folder called `split`.  \n2. **File naming** – Inside the newly created `split` folder, place the three resulting files named `split_01.txt`, `split_02.txt`, and `split_03.txt`.  \n3. **Splitting rule** – Cut `large_file.txt` into exactly **3** parts so that the character count of any two parts differs by no more than **100**.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Create a folder `split` in the test directory.  \nTake the file `large_file.txt` (base name `large_file`) and divide it into exactly 3 parts, each with nearly the same number of characters—no more than 100 characters difference between any two parts.  \nSave the parts as `split_01.txt`, `split_02.txt`, and `split_03.txt` inside `split` (base names `split_01`, `split_02`, `split_03`).",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000478,
+  "requests": 6
+}

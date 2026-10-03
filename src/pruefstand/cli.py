@@ -1,6 +1,7 @@
 """Command line interface: doctor, pilot, estimate, run and report (SPEC 11).
 
-What: the `pruefstand` command, built with Typer.
+What: the `pruefstand` command, built with Typer: doctor, paraphrase, pilot, estimate, run,
+report.
 Why: every experiment step is one command, so runs are reproducible from the shell history
 and the cloud session can run them in the background with nohup.
 How: each command loads a config, builds the pieces (task loader, run store, quota manager,
@@ -60,6 +61,22 @@ def _require_preregistration(config: RunConfig) -> None:
             raise typer.Exit(2)
 
 
+def _key_guard(config: RunConfig):
+    """The key spend guard for OpenRouter models, or None if the config sets no key cap."""
+    from pruefstand.runner.budget import KeySpendGuard, openrouter_key_usage_usd
+
+    if config.key_spend_cap_usd is None:
+        return None
+    envs = {m.api_key_env for m in config.models if m.name.startswith("openrouter/")}
+    if config.redteam_model and config.redteam_model.name.startswith("openrouter/"):
+        envs.add(config.redteam_model.api_key_env)
+    envs.discard(None)
+    if len(envs) != 1:
+        raise typer.BadParameter("key_spend_cap_usd needs exactly one OpenRouter key variable")
+    key = os.environ.get(envs.pop(), "")
+    return KeySpendGuard(config.key_spend_cap_usd, lambda: openrouter_key_usage_usd(key))
+
+
 def _task_ids(config: RunConfig, limit: int | None = None) -> list[str]:
     """Task ids from the suite file, limited to the config's services."""
     services = {s.value for s in config.services}
@@ -82,6 +99,16 @@ def _execute(
     store.write_config(config)
     loader = MCPMarkTasks()
     tasks = {task_id: loader.load(task_id) for task_id in task_ids}
+    if Condition.PARAPHRASE in ([only] if only else config.conditions):
+        # Paraphrases are made once by `pruefstand paraphrase`, never during a run.
+        from pruefstand.redteam.paraphrase import ParaphraseCacheMissing, load_paraphrases
+
+        try:
+            for task in tasks.values():
+                load_paraphrases(task)
+        except ParaphraseCacheMissing as exc:
+            typer.echo(f"Refusing: {exc}", err=True)
+            raise typer.Exit(2) from exc
     specs = build_specs(config, run_id, task_ids, only)
     info = RunInfo(config=config, config_hash=config.config_hash(), git_commit=git_commit_id())
     quota = QuotaManager(store, config.models)
@@ -91,6 +118,7 @@ def _execute(
         )
         for m in config.models
     }
+    key_guard = _key_guard(config)
     typer.echo(f"run {run_id}: {len(specs)} episodes, results in {store.run_dir}")
     status = asyncio.run(
         run_grid(
@@ -103,18 +131,30 @@ def _execute(
             quota=quota,
             checkpoint_every=checkpoint_every,
             on_result=typer.echo,
+            key_guard=key_guard,
         )
     )
     typer.echo("")
     typer.echo(summary_text(store.read_results(), config.k, config.seed))
     if status.paused_models and not status.finished:
         all_paused = quota.all_exhausted([m.name for m in config.models])
-        if all_paused:
+        if status.account_problem:
+            # Missing credit or a rejected (expired, invalid) key: nothing was scored.
+            typer.echo(
+                f"\npaused: the provider rejected the account ({status.account_problem[:200]}). "
+                f"Fix the key or credit, then resume with --resume {run_id}"
+            )
+        elif all_paused:
             typer.echo(
                 f"\nquota exhausted: resume after the provider's daily reset with --resume {run_id}"
             )
         else:
             typer.echo(f"\npaused models {sorted(status.paused_models)}; --resume {run_id} later")
+    elif status.key_spend_stop:
+        typer.echo(
+            f"\nkey spend limit: stopped before the OpenRouter key could pass USD "
+            f"{config.key_spend_cap_usd:g} ({status.key_spend_stop}); partial results kept"
+        )
     elif status.budget_stop:
         typer.echo(f"\nspend cap reached; partial results in {store.run_dir}")
     else:
@@ -163,6 +203,66 @@ def run(
     if checkpoint_every is None and os.environ.get("CLAUDE_CODE_REMOTE") == "true":
         checkpoint_every = 25
     _execute(cfg, run_id, task_ids, only, checkpoint_every)
+
+
+@app.command()
+def paraphrase(
+    config: Path = typer.Option(..., help="config YAML (its redteam_model writes the texts)"),
+    samples: int = typer.Option(5, help="paraphrases to put in the review page"),
+) -> None:
+    """Generate and cache paraphrases for every suite task that has none yet (SPEC 5.6)."""
+    from pruefstand.redteam.paraphrase import (
+        cache_path,
+        generate_for_task,
+        samples_markdown,
+    )
+
+    cfg = load_config(config)
+    _require_preregistration(cfg)
+    if cfg.redteam_model is None:
+        typer.echo("the config has no redteam_model", err=True)
+        raise typer.Exit(2)
+    _quiet_litellm()
+    from pruefstand.agent.llm import LiteLLMChat
+
+    model = LiteLLMChat(cfg.redteam_model, cfg.temperature, None, cfg.usd_to_eur, cfg.max_tokens)
+    key_guard = _key_guard(cfg)
+    loader = MCPMarkTasks()
+    tasks = [loader.load(task_id) for task_id in _task_ids(cfg)]
+    # Up to 5 tasks at a time; each task's variants are made one after another.
+    parallel = 5
+    totals = {"eur": 0.0}
+
+    async def make(task, gate: asyncio.Semaphore) -> None:
+        async with gate:
+            # The key's absolute limit: reserve 0.05 USD for each task that may be running.
+            if key_guard is not None and not key_guard.can_start(0.05, in_flight=parallel):
+                typer.echo(
+                    f"skipped  {task.id}: key spend limit ({key_guard.error or key_guard.last_usage})"
+                )
+                return
+            log = await generate_for_task(task, model, cfg.redteam_model.name, cfg.paraphrases)
+            totals["eur"] += log.cost_eur
+            typer.echo(
+                f"made     {task.id}: {len(log.accepted)}/{cfg.paraphrases} accepted, "
+                f"{len(log.rejected)} rejected, {len(log.dropped)} dropped, EUR {log.cost_eur:.4f}"
+            )
+
+    async def make_all() -> None:
+        gate = asyncio.Semaphore(parallel)
+        todo = []
+        for task in tasks:
+            if cache_path(task.id).exists():
+                typer.echo(f"cached   {task.id}")
+            else:
+                todo.append(make(task, gate))
+        await asyncio.gather(*todo)
+
+    asyncio.run(make_all())
+    total_eur = totals["eur"]
+    page = REPO_ROOT / "docs" / "notes" / "paraphrase-samples.md"
+    page.write_text(samples_markdown(tasks, samples), encoding="utf-8")
+    typer.echo(f"done: EUR {total_eur:.4f} this time; review page {page}")
 
 
 @app.command()
@@ -219,15 +319,21 @@ def estimate(
 @app.command()
 def report(
     run_dir: Path = typer.Argument(..., help="runs/<run_id>"),
-    text: bool = typer.Option(True, "--text/--html", help="terminal card (HTML arrives in M3)"),
+    text: bool = typer.Option(False, "--text", help="print the card only, no HTML"),
 ) -> None:
-    """Print the report card of a run."""
-    if not text:
-        typer.echo("The HTML report arrives in M3.", err=True)
-        raise typer.Exit(2)
+    """Write RUN_DIR/report.html and print the report card (SPEC 12)."""
+    from pruefstand.report.card import build_card, card_text
+    from pruefstand.report.html import write_report
+
     store = RunStore(run_dir)
     cfg = load_config(store.config_path)
-    typer.echo(summary_text(store.read_results(), cfg.k, cfg.seed))
+    results = store.read_results()
+    # Baseline diagnostics (parse failures, empty replies, providers), then the full card.
+    typer.echo(summary_text(results, cfg.k, cfg.seed))
+    typer.echo("")
+    typer.echo(card_text(build_card(results, cfg.k, cfg.seed)))
+    if not text:
+        typer.echo(f"\nwrote {write_report(run_dir)}")
 
 
 def _check(ok: bool, label: str, detail: str = "", warn: bool = False) -> bool:
@@ -256,20 +362,14 @@ def doctor(
     node = _version(["node", "--version"])
     all_ok &= _check(node.startswith("v") and int(node[1:].split(".")[0]) >= 20, "node >= 20", node)
     all_ok &= _check(shutil.which("npx") is not None, "npx")
-    # Postgres: the native service first, Docker as fallback (needed from M2).
-    pg = (
-        subprocess.run(["pg_isready"], capture_output=True, text=True)
-        if shutil.which("pg_isready")
-        else None
-    )
-    if pg is not None and pg.returncode == 0:
-        _check(True, "postgres (native)", pg.stdout.strip())
-    elif shutil.which("docker"):
-        _check(
-            True, "postgres", "native service not running; docker available as fallback", warn=True
-        )
-    else:
-        all_ok &= _check(False, "postgres", "neither a running native service nor docker")
+    # Postgres: MCPMark's PostgreSQL 17 image in Docker (the sandbox starts the container).
+    from pruefstand.sandbox import postgres as pg_sandbox
+
+    try:
+        pg_sandbox.ensure_container()
+        _check(True, "postgres (docker)", f"{pg_sandbox.IMAGE} on port {pg_sandbox.PG_PORT}")
+    except pg_sandbox.PostgresUnavailable as exc:
+        all_ok &= _check(False, "postgres (docker)", str(exc))
     commit_file = REPO_ROOT / "vendor" / "MCPMARK_COMMIT"
     all_ok &= _check(
         (MCPMARK_ROOT / "tasks").is_dir() and commit_file.exists(),

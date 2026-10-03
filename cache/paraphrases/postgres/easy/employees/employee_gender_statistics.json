@@ -1,0 +1,32 @@
+{
+  "task_id": "postgres/easy/employees/employee_gender_statistics",
+  "source_sha1": "a0a43dcbb61ba5ceb0c23468f8b07abf7b1f1a95",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:51:55Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "The HR department needs a compact gender‑distribution table for its yearly workforce composition report, drawing on the data stored in the `employees` schema. Build a table called `gender_statistics` inside that schema, and define exactly the following columns:\n\n* `gender` (varchar) – the gender code, either 'M' or 'F'.\n* `total_employees` (integer) – the count of all employees of the given gender.\n* `current_employees` (integer) – the count of employees of that gender who have an active salary record, identified by a row in the `salaries` table where `to_date` = '9999-01-01'.\n* `percentage_of_workforce` (decimal) – the proportion of the current workforce represented by that gender, calculated as (current_employees / total current employees * 100).\n\nThe implementation must satisfy these conditions:\n\n1. Derive `total_employees` by counting every row in the `employees` table for each gender.\n2. Derive `current_employees` by counting rows in the `salaries` table whose `to_date` equals the literal '9999-01-01'.\n3. Compute `percentage_of_workforce` using only the set of current employees and multiply the ratio by 100.\n4. Populate the table with exactly 2 rows – one for the gender value 'M' and one for the gender value 'F'.\n\nThis output will give HR a basic view of gender composition for diversity reporting.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "**Objective**  \nProduce a concise gender‑based workforce overview for the HR department’s yearly composition report, using data from the employee database.\n\n### Deliverable  \nConstruct a table named `gender_statistics` inside the `employees` schema. The table must contain precisely the following fields:\n\n- `gender` (varchar) – value must be either **M** or **F**  \n- `total_employees` (integer) – count of every employee belonging to the specified gender  \n- `current_employees` (integer) – count of employees of that gender whose salary record is active (i.e., `to_date` = '9999-01-01')  \n- `percentage_of_workforce` (decimal) – share of the current workforce represented by this gender, calculated as *(current_employees / total current employees) × 100*\n\n### Specifications  \n\n1. Derive `total_employees` by tallying all rows per gender in the `employees` table.  \n2. Derive `current_employees` by counting rows per gender that have a matching active entry in the `salaries` table where `to_date` = '9999-01-01'.  \n3. Compute `percentage_of_workforce` exclusively on the basis of the current workforce.  \n4. Ensure the finished `gender_statistics` table holds exactly **2** records – one for **M** and one for **F**.  \n\nThis output will enable HR to gauge the fundamental gender make‑up of the organization for diversity reporting.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Create a `gender_statistics` table in the `employees` schema with exactly these columns:\n\n| Column | Type | Details |\n|--------|------|---------|\n| `gender` | varchar | values ‘M’ or ‘F’ |\n| `total_employees` | integer | count of all employees of that gender from the `employees` table |\n| `current_employees` | integer | count of employees of that gender with an active salary (`to_date` = ‘9999-01-01’) in the `salaries` table |\n| `percentage_of_workforce` | decimal | (`current_employees` / total current employees * 100) |\n\nRequirements:  \n\n1. Derive `total_employees` by counting every row per gender in `employees`.  \n2. Derive `current_employees` by counting rows per gender that have a salary record where `to_date` = ‘9999-01-01’.  \n3. Compute `percentage_of_workforce` using only the current workforce.  \n4. The final table must contain exactly **2** rows – one for ‘M’ and one for ‘F’.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.00058,
+  "requests": 7
+}
