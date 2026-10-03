@@ -10,8 +10,14 @@ fi
 # Start the preinstalled PostgreSQL 16 service; harmless if it is already running.
 service postgresql start >/dev/null 2>&1 || true
 
-# Install or refresh Python dependencies once pyproject.toml exists (it won't before M1 scaffolding).
+# Everything below works on the repo, so move into it first.
 cd "$CLAUDE_PROJECT_DIR" || exit 0
+
+# Make Saad the git author of every commit made in this session (Claude stays as a Co-authored-by trailer).
+git config user.name "Saad Aamir"
+git config user.email "68020093+saad-aamir@users.noreply.github.com"
+
+# Install or refresh Python dependencies once pyproject.toml exists (it won't before M1 scaffolding).
 if [ -f pyproject.toml ]; then
   uv sync --quiet || true
 fi
