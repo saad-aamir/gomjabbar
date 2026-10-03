@@ -949,3 +949,21 @@
 2026-10-03T09:12:30Z [85a2d1fb63c5f63d] done passed=True claim=done stop=final_answer steps=5 44.562s
 2026-10-03T09:12:31Z [2047f7393e7ffd6f] start openrouter/openai/gpt-oss-120b postgres/easy/dvdrental/create_payment_index fault fault-rpc_error #0
 2026-10-03T09:12:34Z [d2525c1d4162ee31] done passed=True claim=done stop=final_answer steps=4 4.305s
+2026-10-03T09:12:36Z checkpoint pushed: run(dev-20261003-052646): checkpoint 150/240
+2026-10-03T09:12:37Z [5e7c7c332e0f73c0] start openrouter/openai/gpt-oss-20b postgres/easy/dvdrental/create_payment_index fault fault-rpc_error #0
+2026-10-03T09:12:40Z [5e7c7c332e0f73c0] done passed=True claim=done stop=final_answer steps=2 3.436s
+2026-10-03T09:12:40Z [3b3bf5301e3cf8a0] start openrouter/openai/gpt-oss-120b postgres/easy/dvdrental/create_payment_index fault fault-timeout #0
+2026-10-03T09:12:49Z [3b3bf5301e3cf8a0] done passed=True claim=done stop=final_answer steps=2 8.99s
+2026-10-03T09:12:50Z [81928a2935339a88] start openrouter/openai/gpt-oss-20b postgres/easy/dvdrental/create_payment_index fault fault-timeout #0
+2026-10-03T09:12:50Z [2047f7393e7ffd6f] done passed=True claim=done stop=final_answer steps=5 19.5s
+2026-10-03T09:12:51Z [ff336820c15d3cb6] start openrouter/openai/gpt-oss-120b postgres/easy/dvdrental/create_payment_index fault fault-tool_error #0
+2026-10-03T09:13:09Z [ff336820c15d3cb6] done passed=True claim=done stop=final_answer steps=6 18.492s
+2026-10-03T09:13:10Z [64c60a1713fcc35e] start openrouter/openai/gpt-oss-20b postgres/easy/dvdrental/create_payment_index fault fault-tool_error #0
+2026-10-03T09:13:14Z [64c60a1713fcc35e] done passed=True claim=done stop=final_answer steps=4 4.347s
+2026-10-03T09:13:15Z [918396676a3a3596] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-empty #0
+2026-10-03T09:13:26Z [81928a2935339a88] done passed=True claim=done stop=final_answer steps=6 35.543s
+2026-10-03T09:13:26Z [6f71e855e107aef1] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view fault fault-empty #0
+2026-10-03T09:15:22Z [6f71e855e107aef1] done passed=True claim=none stop=llm_error steps=51 115.615s
+2026-10-03T09:15:23Z [dd73ba994150c71b] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-malformed #0
+2026-10-03T09:16:01Z [918396676a3a3596] done passed=True claim=done stop=final_answer steps=30 166.132s
+2026-10-03T09:16:02Z [7203eaa002f200b3] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view fault fault-malformed #0
