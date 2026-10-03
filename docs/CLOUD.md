@@ -30,11 +30,11 @@ Facts about the environment this repo is built in, and the rules that follow fro
 
 ## Repo-side session hook
 
-`.claude/settings.json` runs `scripts/cloud_session_start.sh` on every session start and resume. The script does nothing outside the cloud. Inside it, it starts PostgreSQL and installs Python dependencies with `uv sync`.
+`.claude/settings.json` runs `scripts/cloud_session_start.sh` on every session start and resume. The script does nothing outside the cloud. Inside it, it starts the Docker daemon (for the Postgres container), sets Saad as git author and installs Python dependencies with `uv sync`.
 
 ## What this means for the code
 
 - Harness model calls go to gpt-oss-20b and gpt-oss-120b on OpenRouter with `PFS_OPENROUTER_API_KEY`, passed explicitly to LiteLLM, pinned to one upstream provider (`docs/notes/openrouter.md`). They are paid: a run only starts when its config has `spend_cap_eur` above 0, set by Saad, and it stops cleanly before crossing that cap. If the account runs out of credit, the run pauses like an exhausted quota and continues with `--resume`. (Until 2026-10-03 the harness used Groq's free tier; see `DEVIATIONS.md`.)
 - No Ollama models in cloud configs. `configs/local.yaml` exists for Saad's Mac.
-- Postgres: native service first, Docker only as a fallback.
+- Postgres: a Docker container from MCPMark's image (`pgvector/pgvector:0.8.0-pg17-bookworm`), started by the sandbox on first use. The native PostgreSQL 16 cannot restore MCPMark's PostgreSQL 17 backups, so it is not used (since 2026-10-03). The Docker daemon is not running at session start; the session hook starts it.
 - Results are committed in checkpoints (SPEC section 4, Persistence).

@@ -51,3 +51,10 @@ def test_sandbox_copies_state_and_plants_vault_only_when_asked(tmp_path, monkeyp
     assert attacked.server_command()[-2:] == [str(attacked.workspace), str(attacked.vault)]
     attacked.destroy()
     assert not attacked.base.exists()
+
+
+def test_easy_postgres_suite_matches_dev_suite():
+    tasks = MCPMarkTasks().discover(Service.POSTGRES, "easy")
+    assert len(tasks) == 10
+    dev_ids = [i for i in read_suite(REPO_ROOT / "suites" / "dev.txt") if i.startswith("postgres/")]
+    assert [t.id for t in tasks] == dev_ids

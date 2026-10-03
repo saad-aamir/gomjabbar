@@ -49,7 +49,7 @@ At the end of each milestone, write `docs/learning/M<n>-walkthrough.md` in plain
 You are most likely in a **Claude Code cloud session**: an Ubuntu 24.04 VM (4 vCPU, 16 GB RAM) that is reclaimed after inactivity. Read `docs/CLOUD.md` once. In short:
 
 - **Commit and push often.** Anything not pushed can vanish when the VM is reclaimed. Push after every passing feature, and use `--checkpoint-every` for runs.
-- **PostgreSQL 16 is preinstalled but stopped.** Start it with `service postgresql start`. Prefer it over Docker.
+- **Postgres runs in Docker** (MCPMark's PostgreSQL 17 image; the preinstalled PostgreSQL 16 cannot restore MCPMark's backups). The session hook starts `dockerd`; the sandbox starts the `pruefstand-pg` container on first use.
 - **No Ollama here.** Cloud runs use API models only. `configs/local.yaml` is for Saad's Mac.
 - **The harness uses paid gpt-oss models through OpenRouter, key in `PFS_OPENROUTER_API_KEY`,** pinned to one upstream provider with fallbacks off (`docs/notes/openrouter.md`). Runs stop cleanly before they would cross the config's `spend_cap_eur` (SPEC 5.5). Never read, set or export `ANTHROPIC_API_KEY`.
 - **Network is an allowlist.** If something you need is blocked (a download host for MCPMark data, for example), stop and tell Saad the exact host. Do not look for workarounds.

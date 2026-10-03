@@ -285,20 +285,14 @@ def doctor(
     node = _version(["node", "--version"])
     all_ok &= _check(node.startswith("v") and int(node[1:].split(".")[0]) >= 20, "node >= 20", node)
     all_ok &= _check(shutil.which("npx") is not None, "npx")
-    # Postgres: the native service first, Docker as fallback (needed from M2).
-    pg = (
-        subprocess.run(["pg_isready"], capture_output=True, text=True)
-        if shutil.which("pg_isready")
-        else None
-    )
-    if pg is not None and pg.returncode == 0:
-        _check(True, "postgres (native)", pg.stdout.strip())
-    elif shutil.which("docker"):
-        _check(
-            True, "postgres", "native service not running; docker available as fallback", warn=True
-        )
-    else:
-        all_ok &= _check(False, "postgres", "neither a running native service nor docker")
+    # Postgres: MCPMark's PostgreSQL 17 image in Docker (the sandbox starts the container).
+    from pruefstand.sandbox import postgres as pg_sandbox
+
+    try:
+        pg_sandbox.ensure_container()
+        _check(True, "postgres (docker)", f"{pg_sandbox.IMAGE} on port {pg_sandbox.PG_PORT}")
+    except pg_sandbox.PostgresUnavailable as exc:
+        all_ok &= _check(False, "postgres (docker)", str(exc))
     commit_file = REPO_ROOT / "vendor" / "MCPMARK_COMMIT"
     all_ok &= _check(
         (MCPMARK_ROOT / "tasks").is_dir() and commit_file.exists(),

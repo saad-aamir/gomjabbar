@@ -10,6 +10,18 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: postgres-mcp started with uvx and a pinned MCP SDK
+- **What the spec said:** reuse MCPMark's server launch command, `pipx run postgres-mcp==0.3.0 --access-mode=unrestricted` with `DATABASE_URI` (SPEC 2.1, `docs/notes/mcpmark-interface.md`).
+- **What we did instead:** `uvx --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted`, same `DATABASE_URI`.
+- **Why:** `pipx` is not installed in the cloud VM; `uvx` runs the same PyPI package (approved by Saad). `postgres-mcp` 0.3.0 does not pin the MCP SDK, and a fresh install today pulls `mcp` 2.x, on which the server dies at import. 1.30.0 is the 1.x SDK the harness itself uses.
+- **Effect on results:** none expected; same server version and tools. Other transitive dependencies resolve to their current versions.
+
+## 2026-10-03: Postgres in MCPMark's Docker image, not the native PostgreSQL 16
+- **What the spec said:** SPEC 5.1: the native PostgreSQL 16 service when it exists, otherwise one Docker container per run. Saad approved native PG16 for M2.
+- **What we did instead:** one long-lived Docker container `pruefstand-pg` from MCPMark's image `pgvector/pgvector:0.8.0-pg17-bookworm`, user `postgres`, on `127.0.0.1:55432`, kept across runs (templates are restored once per machine). `pg_restore` runs inside the container. The native service is not used; the session hook starts `dockerd` instead of `postgresql`. `doctor` checks the container. SPEC 5.1, `docs/CLOUD.md` and CLAUDE.md updated.
+- **Why:** MCPMark's sample database backups are PostgreSQL 17 dumps (format 1.16); PostgreSQL 16's `pg_restore` refuses them. MCPMark itself uses this exact image. Found after the approval, so this replaces the approved native setup (Claude's choice, reported to Saad). One container for all runs instead of one per run because templates are read only and each episode gets its own clone; restoring employees (34 MB) per run would only add time.
+- **Effect on results:** same PostgreSQL major version and extensions as MCPMark. Also found: a failed `pg_restore` writes `error:` in lower case; MCPMark checks for `ERROR`, so a failed restore can go unnoticed there. Ours ignores case and requires at least one table.
+
 ## 2026-10-03: easy dev tasks are exploratory, standard suite held out
 - **What the spec said:** SPEC 2.2 defines `dev.txt` (easy) and `full.txt` (standard); CLAUDE.md forbids the `full` suite before `PRE_REGISTRATION.md` is FINAL. Nothing said whether single standard tasks may be run earlier.
 - **What we did instead:** one line under Setup in `PRE_REGISTRATION.md`: the 20 easy dev tasks are exploratory, the standard suite is held out for the confirmatory run after FINAL. No standard task is run before then. No hypothesis or threshold was changed. The Agent line in the same Setup section now names temperature 1.0 and the empty-reply re-sampling (entries below).

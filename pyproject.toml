@@ -9,15 +9,16 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 dependencies = [
-    "mcp>=1.30,<2",          # 1.x API (stdio_client, ClientSession, FastMCP); see docs/notes/mcp-stdio.md
-    "litellm>=1.50",         # one interface to every model provider
-    "pydantic>=2.6",         # data contracts in models.py
-    "pyyaml>=6",             # configs and payload files
-    "typer>=0.12",           # command line interface
-    "jinja2>=3.1",           # HTML report (M3)
-    "numpy>=1.26",           # bootstrap
-    "pandas>=2.1",           # analysis tables
-    "statsmodels>=0.14",     # McNemar test
+    "mcp>=1.30,<2", # 1.x API (stdio_client, ClientSession, FastMCP); see docs/notes/mcp-stdio.md
+    "litellm>=1.50", # one interface to every model provider
+    "pydantic>=2.6", # data contracts in models.py
+    "pyyaml>=6", # configs and payload files
+    "typer>=0.12", # command line interface
+    "jinja2>=3.1", # HTML report (M3)
+    "numpy>=1.26", # bootstrap
+    "pandas>=2.1", # analysis tables
+    "statsmodels>=0.14", # McNemar test
+    "psycopg2-binary>=2.9.13",  # postgres sandbox, and MCPMark postgres verifiers import psycopg2
 ]
 
 [project.scripts]
