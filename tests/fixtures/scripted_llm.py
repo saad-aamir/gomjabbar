@@ -26,6 +26,7 @@ class Step:
     error: Exception | None = None
     delay_s: float = 0.0  # simulated time spent in the call
     throttle_s: float = 0.0  # how much of that delay is reported as quota waiting
+    parse_retries: int = 0  # provider parse failures the real client would have retried
 
 
 def call(tool: str, /, **arguments) -> Step:
@@ -95,4 +96,6 @@ class ScriptedLLM:
             model_version=self.model_version,
             provider=self.provider,
             throttle_s=step.throttle_s,
+            parse_retries=step.parse_retries,
+            attempts=1 + step.parse_retries,
         )

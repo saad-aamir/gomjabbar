@@ -144,6 +144,8 @@ async def run_episode(
             stop_reason=outcome.stop_reason,
             steps=outcome.steps,
             llm_requests=outcome.llm_requests,
+            parse_failure_retries=outcome.parse_retries,
+            malformed_tool_names=outcome.malformed_tool_names,
             tokens_in=outcome.tokens_in,
             tokens_out=outcome.tokens_out,
             tokens_cached_in=outcome.tokens_cached,

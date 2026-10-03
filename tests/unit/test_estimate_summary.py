@@ -86,3 +86,18 @@ def test_estimate_wall_hours_and_usd_for_a_paid_model():
         assert e.days_by_requests is None and e.days_by_tokens is None  # no daily limits
     # Two models, one hour each, two workers: one hour of wall time.
     assert round(wall_hours(cfg, estimates), 6) == 1.0
+
+
+def test_summary_reports_parse_failures_and_malformed_names():
+    results = [
+        make_result(
+            make_spec(model="m", attempt=0),
+            llm_requests=10,
+            parse_failure_retries=2,
+            malformed_tool_names=1,
+        ),
+        make_result(make_spec(model="m", attempt=1), llm_requests=10),
+    ]
+    text = summary_text(results, k=1, seed=1)
+    assert "parse failures    2 retries / 20 requests = 0.100, in 1/2 episodes" in text
+    assert "malformed names   1 calls (0.50 per episode), in 1/2 episodes" in text

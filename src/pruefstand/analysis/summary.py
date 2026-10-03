@@ -1,7 +1,8 @@
 """Plain-text summary of a run: the M1 terminal report card.
 
 What: per model, pass@1 and pass^k with 95% task-level bootstrap intervals, strict pass@1,
-false-success rate, stop reasons and average effort per episode.
+false-success rate, stop reasons, average effort per episode, provider parse-failure rate,
+malformed tool names and the serving providers.
 Why: M1's gate asks for these numbers in the terminal; the HTML report comes in M3.
 How: `pruefstand report RUN_DIR --text` and the end of `run` and `pilot` call `summary_text`.
 """
@@ -63,6 +64,26 @@ def summary_text(results: list[EpisodeResult], k: int, seed: int) -> str:
             f"{sum(r.duration_s for r in rows) / n:.0f}s, "
             f"EUR {sum(r.cost_eur for r in rows) / n:.4f}"
         )
+        # Provider parse failures: the share of model requests the provider could not parse
+        # and that were retried (capped at 3 per call; beyond that the episode is llm_error).
+        requests = sum(r.llm_requests for r in rows)
+        parse_retries = sum(r.parse_failure_retries for r in rows)
+        parse_eps = sum(1 for r in rows if r.parse_failure_retries)
+        rate = parse_retries / requests if requests else 0.0
+        lines.append(
+            f"   parse failures    {parse_retries} retries / {requests} requests = {rate:.3f}"
+            f", in {parse_eps}/{n} episodes"
+        )
+        # Tool names with a leaked Harmony token, such as "write_file<|channel|>commentary".
+        malformed = sum(r.malformed_tool_names for r in rows)
+        malformed_eps = sum(1 for r in rows if r.malformed_tool_names)
+        lines.append(
+            f"   malformed names   {malformed} calls ({malformed / n:.2f} per episode)"
+            f", in {malformed_eps}/{n} episodes"
+        )
+        providers = sorted({r.provider for r in rows if r.provider})
+        if providers:
+            lines.append(f"   providers         {', '.join(providers)}")
         versions = sorted({r.model_version for r in rows})
         lines.append(f"   model versions    {', '.join(versions)}")
     return "\n".join(lines)

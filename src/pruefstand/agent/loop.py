@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import string
 import sys
 import time
 from collections.abc import Mapping
@@ -102,13 +103,23 @@ class Trace:
 FinalClaim = Literal["done", "failed", "none"]
 
 
+# Characters skipped before the first word of the final message: whitespace, markdown
+# markers (**, __, #, >, backticks) and every ASCII punctuation mark. string.punctuation
+# already contains *, _, #, > and `, and is listed in full so the rule is easy to read.
+_CLAIM_PREFIX_CHARS = string.whitespace + string.punctuation
+
+
 def final_claim_of(text: str) -> FinalClaim:
     """done / failed / none from the first word of the last assistant message (SPEC 5.3).
 
-    Leading punctuation and markdown are skipped, so "**DONE**: ..." counts as done.
+    Leading whitespace, markdown and punctuation are stripped first, and the comparison is
+    case-insensitive, so "**DONE**: ...", "__Done__", "> `done`" and "### DONE" all count
+    as done. Only the first word decides: "Not done" is none.
     """
-    match = re.match(r"^\W*([A-Za-z]+)", text or "")
-    word = match.group(1).lower() if match else ""
+    # Strip the leading decoration, then read the letters of the first word.
+    stripped = (text or "").lstrip(_CLAIM_PREFIX_CHARS)
+    match = re.match(r"[A-Za-z]+", stripped)
+    word = match.group(0).lower() if match else ""
     if word == "done":
         return "done"
     if word == "failed":
@@ -133,9 +144,28 @@ class AgentOutcome:
     # is exactly one; more than one would show that the pin did not hold.
     providers: set[str] = field(default_factory=set)
     llm_requests: int = 0  # HTTP requests, retries included (for quota estimates)
+    # Retries after the provider could not parse the model's output (Harmony parse errors).
+    parse_retries: int = 0
+    # Tool calls whose name carries a leaked Harmony token, e.g. "write_file<|channel|>commentary".
+    malformed_tool_names: int = 0
     quota_exhausted: bool = False  # the model's daily quota ran out mid-episode
     throttle_s: float = 0.0  # time spent waiting on the quota throttle (not agent time)
     error: str = ""
+
+
+def is_malformed_tool_name(name: str) -> bool:
+    """True if a tool name carries a piece of gpt-oss's Harmony chat format.
+
+    Harmony marks its structure with special tokens written "<|...|>" (for example
+    "<|channel|>"). A real tool name never contains them; when one leaks into the name the
+    server answers "unknown tool". Counted per episode, never repaired (DEVIATIONS.md).
+    """
+    return "<|" in name or "|>" in name
+
+
+def _name_flag(name: str) -> dict:
+    """Extra trace field marking a malformed tool name, empty for a normal name."""
+    return {"malformed_name": True} if is_malformed_tool_name(name) else {}
 
 
 def mcp_tool_to_openai(tool: types.Tool) -> dict:
@@ -339,6 +369,7 @@ class AgentSession:
                 reply = await self.llm.complete(self.messages, self.tools)
             except QuotaExhausted as exc:
                 outcome.llm_requests += exc.attempts
+                outcome.parse_retries += exc.parse_retries
                 outcome.stop_reason = "llm_error"
                 outcome.quota_exhausted = True
                 outcome.error = str(exc)
@@ -346,9 +377,13 @@ class AgentSession:
                 return
             except LLMError as exc:
                 outcome.llm_requests += exc.attempts
+                outcome.parse_retries += exc.parse_retries
                 outcome.stop_reason = "llm_error"
                 outcome.error = str(exc)
-                self.trace.add("error", {"where": "llm", "error": str(exc)})
+                self.trace.add(
+                    "error",
+                    {"where": "llm", "error": str(exc), "parse_retries": exc.parse_retries},
+                )
                 return
             outcome.steps += 1
             outcome.tokens_in += reply.tokens_in
@@ -358,6 +393,7 @@ class AgentSession:
             if reply.provider:
                 outcome.providers.add(reply.provider)
             outcome.llm_requests += reply.attempts
+            outcome.parse_retries += reply.parse_retries
             outcome.model_version = reply.model_version or outcome.model_version
             outcome.throttle_s += reply.throttle_s
             self._throttle_s += reply.throttle_s
@@ -370,6 +406,7 @@ class AgentSession:
                     "provider": reply.provider,
                     "tokens_cached": reply.tokens_cached,
                     "cost_eur": reply.cost_eur,
+                    "parse_retries": reply.parse_retries,
                     **reply.extra,
                 },
                 tokens_in=reply.tokens_in,
@@ -387,6 +424,10 @@ class AgentSession:
 
             # 3. Execute each tool call and append its result for the model.
             for tool_call in reply.tool_calls:
+                # Count leaked Harmony tokens in the name; the call still goes to the server
+                # unchanged, which answers "unknown tool" and the model can retry.
+                if is_malformed_tool_name(tool_call.name):
+                    outcome.malformed_tool_names += 1
                 try:
                     text = await self._execute(tool_call.name, tool_call.arguments)
                 except TransportDead as exc:
@@ -409,11 +450,13 @@ class AgentSession:
                 raise ValueError("arguments must be a JSON object")
         except ValueError as exc:
             text = f"Tool error: invalid JSON arguments ({exc})"
-            self.trace.add("tool_call", {"name": name, "arguments_raw": raw_arguments})
+            self.trace.add(
+                "tool_call", {"name": name, "arguments_raw": raw_arguments, **_name_flag(name)}
+            )
             self.trace.add("tool_result", {"name": name, "text": text, "is_error": True})
             return text
 
-        self.trace.add("tool_call", {"name": name, "arguments": arguments})
+        self.trace.add("tool_call", {"name": name, "arguments": arguments, **_name_flag(name)})
         started = time.monotonic()
         try:
             result = await self.session.call_tool(

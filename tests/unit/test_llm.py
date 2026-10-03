@@ -169,3 +169,54 @@ def test_harmony_parse_error_retries():
         400,
     )
     assert classify_error(exc, 1).action == "retry"
+
+
+# ---- parse-failure retries: counted and capped at 3 per call -----------------------------------
+
+PARSE_ERROR = FakeAPIError(
+    "Upstream error from CoreWeave: unexpected tokens remaining in message header", 400
+)
+
+
+def run_with_failures(monkeypatch, failures: int):
+    """Complete once while the provider raises PARSE_ERROR `failures` times, then answers."""
+    import asyncio
+
+    import litellm
+
+    from pruefstand.agent import llm as llm_module
+    from pruefstand.agent.llm import LiteLLMChat
+    from pruefstand.config import ModelConfig
+
+    calls = {"n": 0}
+
+    async def flaky(**kwargs):
+        calls["n"] += 1
+        if calls["n"] <= failures:
+            raise PARSE_ERROR
+        return fake_response(0.001)
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr(litellm, "acompletion", flaky)
+    monkeypatch.setattr(llm_module.asyncio, "sleep", no_sleep)
+    model = ModelConfig(name="openrouter/openai/gpt-oss-20b", free_tier=True)
+    return asyncio.run(LiteLLMChat(model).complete([{"role": "user", "content": "hi"}], []))
+
+
+def test_parse_retries_are_counted(monkeypatch):
+    reply = run_with_failures(monkeypatch, failures=3)
+    assert reply.parse_retries == 3  # three retries, the fourth request worked
+    assert reply.attempts == 4
+
+
+def test_fourth_parse_failure_is_llm_error(monkeypatch):
+    import pytest
+
+    from pruefstand.agent.llm import LLMError
+
+    with pytest.raises(LLMError, match="parse failure after 3 retries") as info:
+        run_with_failures(monkeypatch, failures=4)
+    assert info.value.parse_retries == 3
+    assert info.value.attempts == 4

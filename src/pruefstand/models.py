@@ -149,6 +149,10 @@ class EpisodeResult(BaseModel):
     stop_reason: StopReason
     steps: int  # number of model calls
     llm_requests: int = 0  # HTTP requests to the model, retries included (for `estimate`)
+    # Retries after the provider could not parse the model's output (capped at 3 per call).
+    parse_failure_retries: int = 0
+    # Tool calls whose name carried a leaked Harmony token, e.g. "write_file<|channel|>...".
+    malformed_tool_names: int = 0
     tokens_in: int
     tokens_out: int
     tokens_cached_in: int = 0  # part of tokens_in served from the provider's prompt cache

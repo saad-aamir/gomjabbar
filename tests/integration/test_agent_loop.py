@@ -131,3 +131,25 @@ async def test_slow_agent_times_out(tmp_path):
     limits = LoopLimits(tool_timeout_s=10, episode_timeout_s=1.5)
     outcome, *_ = await run_script(tmp_path, [slow, slow, slow, final("DONE")], limits)
     assert outcome.stop_reason == "timeout"
+
+
+async def test_malformed_names_and_parse_retries_are_counted(tmp_path):
+    # A tool name with a leaked Harmony token goes to the server unchanged ("unknown tool"),
+    # is counted, and is flagged in the trace. Parse retries reported by the client add up.
+    retried = call("write_note", name="a", text="hello")
+    retried.parse_retries = 2
+    outcome, trace, _, _ = await run_script(
+        tmp_path,
+        [
+            raw_call("write_note<|channel|>commentary", '{"name": "a", "text": "hello"}'),
+            retried,
+            final("DONE"),
+        ],
+    )
+    assert outcome.malformed_tool_names == 1
+    assert outcome.parse_retries == 2
+    assert outcome.llm_requests == 5  # 3 calls, one of them with 2 extra requests
+    flagged = [e for e in trace.events if e.kind == "tool_call" and e.payload.get("malformed_name")]
+    assert [e.payload["name"] for e in flagged] == ["write_note<|channel|>commentary"]
+    # The server rejected the malformed call; the correct second call wrote the note.
+    assert json.loads((tmp_path / "notes.json").read_text()) == {"a": "hello"}

@@ -30,6 +30,9 @@ from pruefstand.config import ModelConfig
 MAX_ATTEMPTS = 6
 # Longest single wait between attempts, in seconds.
 MAX_BACKOFF_S = 65.0
+# Retries allowed per completion when the provider cannot parse the model's output. After
+# the third retry also fails to parse, the call fails as llm_error (DEVIATIONS.md 2026-10-03).
+MAX_PARSE_RETRIES = 3
 
 
 class LLMError(Exception):
@@ -37,6 +40,8 @@ class LLMError(Exception):
 
     # HTTP requests the failed call used; they count against the quota like any other.
     attempts: int = 0
+    # How many of those requests were retries after a provider parse failure.
+    parse_retries: int = 0
 
 
 class QuotaExhausted(LLMError):
@@ -67,6 +72,7 @@ class LLMReply:
     provider: str = ""  # upstream provider that served the reply (OpenRouter), "" if unknown
     latency_ms: float = 0.0
     attempts: int = 1  # HTTP requests this completion used (retries included)
+    parse_retries: int = 0  # retries after the provider could not parse the model's output
     throttle_s: float = 0.0  # time spent waiting on our quota gate and 429 backoffs
     finish_reason: str = ""  # as reported by the provider ("stop", "tool_calls", "length", ...)
     extra: dict = field(default_factory=dict)  # e.g. reasoning text, kept for the trace
@@ -128,6 +134,7 @@ class ErrorVerdict:
     action: str  # "retry", "quota_day" or "fatal"
     wait_s: float = 0.0  # suggested wait before retrying
     reason: str = ""
+    parse_failure: bool = False  # the provider could not parse the model's output
 
 
 def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
@@ -168,8 +175,9 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
         # The provider could not parse the model's output (for example Groq's tool_use_failed
         # or output_parse_failed, seen in the first M1 pilot, or CoreWeave's Harmony parser
         # error, seen in the first OpenRouter pilot). Sampling again usually works, so this
-        # is retried like a transient error (it still counts against the quota).
-        return ErrorVerdict("retry", 1.0, text[:300])
+        # is retried like a transient error (it still counts against the quota), but at most
+        # MAX_PARSE_RETRIES times per call, and every retry is counted.
+        return ErrorVerdict("retry", 1.0, text[:300], parse_failure=True)
 
     if status is not None and status >= 500:
         return ErrorVerdict("retry", backoff, text[:300])
@@ -240,6 +248,8 @@ class LiteLLMChat:
         # Time spent waiting for quota, not for the model. The agent loop excludes it from
         # the episode timeout, so a slow free tier never shows up as a model timeout.
         throttle_s = 0.0
+        # Retries after a provider parse failure, counted separately and capped.
+        parse_retries = 0
 
         for attempt in range(1, MAX_ATTEMPTS + 1):
             # Wait for the quota throttle; it raises QuotaExhausted when today's budget is gone.
@@ -257,17 +267,31 @@ class LiteLLMChat:
                         self.gate.mark_day_exhausted()
                     error: LLMError = QuotaExhausted(verdict.reason)
                     error.attempts = attempt
+                    error.parse_retries = parse_retries
+                    raise error from exc
+                # A parse failure beyond the cap is final: the model keeps producing output
+                # the provider cannot parse, so the episode ends as llm_error.
+                if verdict.parse_failure and parse_retries >= MAX_PARSE_RETRIES:
+                    error = LLMError(
+                        f"parse failure after {parse_retries} retries: {verdict.reason}"
+                    )
+                    error.attempts = attempt
+                    error.parse_retries = parse_retries
                     raise error from exc
                 if verdict.action == "fatal" or attempt == MAX_ATTEMPTS:
                     error = LLMError(f"after {attempt} attempts: {verdict.reason or exc}")
                     error.attempts = attempt
+                    error.parse_retries = parse_retries
                     raise error from exc
+                if verdict.parse_failure:
+                    parse_retries += 1
                 await asyncio.sleep(verdict.wait_s)
                 throttle_s += verdict.wait_s
                 continue
             latency_ms = (time.monotonic() - started) * 1000
             reply = self._to_reply(response, latency_ms)
             reply.attempts = attempt
+            reply.parse_retries = parse_retries
             reply.throttle_s = throttle_s
             if self.gate is not None:
                 self.gate.record(reply.tokens_in + reply.tokens_out)
