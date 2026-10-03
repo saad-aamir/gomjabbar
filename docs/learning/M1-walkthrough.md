@@ -55,10 +55,10 @@ Tests, scripts, docs and data:
 ## What is fragile
 
 - **The provider.** If CoreWeave stops serving a model, requests fail with 404 and episodes end as `llm_error`; switching providers makes results incomparable. The OpenRouter key expires 2026-10-10.
-- **gpt-oss-20b's Harmony output.** It often leaks format tokens into tool names (`write_file<|channel|>commentary`) and sometimes ends a turn with only reasoning and an empty message. Both cost it episodes; both are measured, not repaired. The provider's parser also rejects some replies (retried at most 3 times).
+- **gpt-oss output through the provider's Harmony parser.** gpt-oss-20b often leaks format tokens into tool names (`write_file<|channel|>commentary`: 93 calls in 20 of 50 baseline episodes), and the provider rejected 9.5% of its replies as unparsable (6 episodes ended as `llm_error` after 3 retries). Both models sometimes end a turn with reasoning only and an empty message, which the loop must treat as the final answer: 21 of the 100 baseline episodes ended that way, all failed. These are measured, not repaired, and part of the effect may belong to the serving stack rather than the model.
 - **Error classification by message text.** Retry versus stop decisions match words in provider error messages (`per day`, `unexpected tokens remaining`, `Insufficient credits`). A provider rewording its errors changes behaviour silently.
 - **`final_claim` from the first word.** A model that writes "Task completed" instead of DONE scores `none`, which lowers strict pass without changing state pass.
-- **Wall time.** With MCPMark's 100 steps, hard tasks take 15 minutes or more per episode for gpt-oss-120b; the pilot-based estimate was far too low because the pilot ran with 40 steps.
+- **Wall time and estimates.** With MCPMark's 100 steps, one hard task (`file_splitting`) took gpt-oss-120b 14 to 17 minutes per attempt. The pilot used only 3 tasks of one category with 40 steps, so its estimate (1.2 h) matched the baseline (about 1 h) partly by luck: easy tasks were faster than the pilot average, the hard one far slower.
 - **Concurrent git use.** The run's own checkpoints and manual commits share one working tree; a commit at the wrong moment can fail on the index lock (the run logs it and retries at the next checkpoint).
 - **`quota.json` and episode costs of interrupted episodes** are not part of any result row, so the spend guard slightly undercounts after crashes.
 
@@ -73,4 +73,4 @@ Tests, scripts, docs and data:
 7. Why pin one OpenRouter provider, and what would you see in the data if the pin failed?
 8. How do you keep retries from distorting quota counts and cost, and why are parse-failure retries capped and counted?
 9. What are state pass and strict pass, and when do they disagree?
-10. The pilot predicted 1.2 hours and the run took much longer. What went wrong with the estimate, and how would you make it more robust?
+10. The pilot ran 3 tasks with a 40-step limit and still predicted the 100-step baseline's time well. Why was that partly luck, and how would you make the estimate more robust?
