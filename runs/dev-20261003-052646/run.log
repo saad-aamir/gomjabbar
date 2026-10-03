@@ -18,3 +18,7 @@
 2026-10-03T05:56:37Z run start: 200 specs, 193 to do
 2026-10-03T05:56:37Z [04716399def1eb0c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #3
 2026-10-03T05:56:38Z [3dda7ad53ec13119] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #4
+2026-10-03T06:07:01Z [04716399def1eb0c] done passed=False claim=done stop=final_answer steps=93 623.594s
+2026-10-03T06:07:01Z [0291e856e3ccf656] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #4
+2026-10-03T06:07:17Z [3dda7ad53ec13119] done passed=False claim=done stop=final_answer steps=79 638.909s
+2026-10-03T06:07:17Z [789acc7ee43fa6a0] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching baseline orig #0
