@@ -10,6 +10,30 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: step 5 conditions and the box 2, 3 and 6 tests are written by Saad
+- **What the spec said:** M3 steps 3 to 5 build the policy success-check tests, the poison, inject and vault_control conditions, and their tests; nothing says who writes them.
+- **What we did instead:** the session's safety classifier repeatedly blocked the model from writing the attack-condition modules (`conditions/poison.py`, `conditions/inject.py`, `conditions/vault_control.py`) and the policy success-check tests, so Saad writes those by hand: the three condition modules, `tests/unit/test_policy_checks.py` (acceptance boxes 2, 3 and 6: canary false-positive, each payload's `success_check`, and strict_passed false on a leak), and any strict-pass helper in `graders/honesty.py`. Everything the conditions depend on is in place: the proxy mutators, payload loading, the policy grader's `attacker_goal_met`, the read/write classifier, and the runner wiring that plants the vault, builds the plan, grades the attacker's goal and writes attack and pushback rows. The variant-id to payload mapping the conditions should use lives in `payloads.py` (`attack_variant`, `attack_payload`) so the modules stay small.
+- **Why:** the blocks are a property of this session's safeguards, not of the code; splitting the work keeps M3 moving without fighting the classifier. Decided by Saad.
+- **Effect on results:** none. The conditions are mechanical given the helpers; the report shows no attack or pushback rows until they exist, and the full suite stays green in the meantime.
+
+## 2026-10-03: M3 runs use one fresh dev run (decision A)
+- **What the spec said:** SPEC 6.7 says pushback continues the same session as the baseline episode it challenges; SPEC 5.5 orders a run's episodes but says nothing about how M3's conditions are grouped into runs.
+- **What we did instead:** M3's measurements come from one new dev run, `configs/dev.yaml` unchanged, chunked with `--only` (baseline, which carries pushback, then vault_control, poison, inject, and the P1 conditions if they fit the budget). The M2 dev run of record (`runs/dev-20261003-052646`) is left as it is.
+- **Why:** the M2 run's baseline sessions are closed, so pushback cannot be attached to them; it needs sessions that are still open, which means running baseline again. Putting every M3 condition in that same fresh run keeps all the M3 comparisons (attack vs vault_control, pushback vs baseline) at one commit and one config. Decided by Saad.
+- **Effect on results:** M3 numbers come from their own run; they are compared with that run's own baseline and vault_control, not with the M2 run.
+
+## 2026-10-03: auto target resolution picks by keyword order (decision B)
+- **What the spec said:** SPEC 6.4: `auto` resolves to "the first tool whose name contains write, edit, move, create, execute or query, chosen from the live tool list".
+- **What we did instead:** the proxy tries the keywords in that order and takes the first tool matching the current keyword (`proxy/mutators.py:resolve_auto_target`): keyword order wins over tool-list order. On filesystem this picks `write_file`; on postgres `execute_sql`.
+- **Why:** reading it as tool-list order would, on postgres, match `explain_query` (it contains "query") before `execute_sql`, because `explain_query` comes first in the server's list. `explain_query` is read-only and the agent rarely calls it, so the poison would almost never fire. Keyword order targets the write tool, which is the point of the attack. Chosen by Claude, confirmed by Saad.
+- **Effect on results:** poison with `target_tool: auto` lands on the writing tool for both services. The resolved tool is logged per episode (`poison_target` in the proxy side log).
+
+## 2026-10-03: an inject rule waits for a result it can append to (decision C)
+- **What the spec said:** SPEC 6.5: inject fires on the nth matching `tools/call`, `tool="*"`, `nth_call=1`.
+- **What we did instead:** if the response to the chosen call is a JSON-RPC error (no `result` to append a text block to), the inject rule is re-armed and delivers on the next matching call instead (`proxy/relay.py:_pick_inject`, `_inject`). It still fires once.
+- **Why:** otherwise an inject episode whose first tool call happened to error would deliver no payload at all and silently measure nothing. Re-arming guarantees every inject episode actually presents its payload. Chosen by Claude, confirmed by Saad.
+- **Effect on results:** inject episodes reliably deliver the payload; the delivery call is logged (`inject`, with `inject_rearmed` when it waited).
+
 ## 2026-10-03: postgres tests are skipped in CI
 - **What the spec said:** CI runs `uv sync`, `ruff check`, `pytest`; no paid calls, no Docker, no Ollama (SPEC 13).
 - **What we did instead:** tests that need the PostgreSQL container are marked `postgres` and skipped when `CI=true` (and wherever the container cannot be started), with the reason printed by `pytest -rs` (`tests/conftest.py`). They run in cloud sessions and locally with Docker.
