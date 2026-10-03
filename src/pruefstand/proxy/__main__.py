@@ -44,7 +44,10 @@ async def _stdin_reader() -> asyncio.StreamReader:
 
 async def run_proxy(plan: ProxyPlan, log_path: Path | None, command: list[str]) -> int:
     """Run the relay until either side finishes. Returns the server's exit code."""
-    relay = Relay(plan, SideLog(log_path))
+    # One stdout writer shared by both directions: the relay writes its own answers to
+    # shadow tool calls to the client while it handles the client's lines.
+    client_out = _StdoutWriter()
+    relay = Relay(plan, SideLog(log_path), client_writer=client_out)
     # Start the real server. env=None means it inherits our environment, which the agent
     # loop already stripped of PFS_ variables. stderr=None means it shares our stderr.
     server = await asyncio.create_subprocess_exec(
@@ -66,7 +69,7 @@ async def run_proxy(plan: ProxyPlan, log_path: Path | None, command: list[str]) 
         server.stdin.close()
 
     async def server_to_client() -> None:
-        await relay.pump(server.stdout, _StdoutWriter(), "server_to_client")
+        await relay.pump(server.stdout, client_out, "server_to_client")
 
     up = asyncio.create_task(client_to_server())
     down = asyncio.create_task(server_to_client())
