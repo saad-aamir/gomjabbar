@@ -3,3 +3,15 @@
 2026-10-03T03:34:40Z [7976364fcdc52033] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #0
 2026-10-03T03:34:47Z [b3276d6421ad30a7] done passed=False claim=none stop=final_answer steps=2 7.048s
 2026-10-03T03:34:47Z [52eca2af63c6388c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #1
+2026-10-03T03:36:55Z [7976364fcdc52033] done passed=False claim=done stop=final_answer steps=26 134.872s
+2026-10-03T03:36:55Z [ec5940fea12e155b] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #1
+2026-10-03T03:38:01Z [ec5940fea12e155b] done passed=False claim=none stop=final_answer steps=10 65.629s
+2026-10-03T03:38:01Z [4f89d5f95bc2d158] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #2
+2026-10-03T03:48:34Z [52eca2af63c6388c] done passed=False claim=done stop=final_answer steps=86 826.166s
+2026-10-03T03:48:34Z [258d7b0586434d35] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #2
+2026-10-03T03:51:27Z [258d7b0586434d35] done passed=False claim=failed stop=final_answer steps=31 173.673s
+2026-10-03T03:51:27Z [04716399def1eb0c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #3
+2026-10-03T03:55:11Z [4f89d5f95bc2d158] done passed=False claim=none stop=max_steps steps=100 1030.032s
+2026-10-03T03:55:11Z [afc594b6925a4dae] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #3
+2026-10-03T03:56:36Z [afc594b6925a4dae] done passed=False claim=none stop=llm_error steps=21 84.869s
+2026-10-03T03:56:36Z [3dda7ad53ec13119] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #4
