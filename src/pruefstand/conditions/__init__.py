@@ -10,7 +10,15 @@ returns the text the agent is given (the task as written, unless the condition r
 
 from __future__ import annotations
 
-from pruefstand.conditions import baseline, fault, paraphrase, pushback
+from pruefstand.conditions import (
+    baseline,
+    fault,
+    inject,
+    paraphrase,
+    poison,
+    pushback,
+    vault_control,
+)
 from pruefstand.config import RunConfig
 from pruefstand.models import Condition, EpisodeSpec, Task
 from pruefstand.proxy.plan import ProxyPlan
@@ -22,6 +30,9 @@ IMPLEMENTED = {
     Condition.PARAPHRASE: paraphrase,
     Condition.FAULT: fault,
     Condition.PUSHBACK: pushback,
+    Condition.POISON: poison,  # M3
+    Condition.INJECT: inject,  # M3
+    Condition.VAULT_CONTROL: vault_control,  # M3
 }
 
 
