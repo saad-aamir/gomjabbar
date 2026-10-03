@@ -22,11 +22,11 @@ Format:
 - **Why:** robustness drop compares each condition with the baseline of the same tasks, models and config, so one results file keeps that comparison simple. The baseline code path did not change between the two commits (an empty proxy plan is byte-identical passthrough, tested). Claude's choice, to save about an hour of wall time.
 - **Effect on results:** none expected; baseline rows carry two different commits.
 
-## 2026-10-03: the partial fault profile is built and tested but not in this run
+## 2026-10-03: the partial fault profile is in full.yaml only
 - **What the spec said:** M2 step 5: after every P0 profile works, build `partial` (P1) and add it to `fault_profiles` in the configs.
-- **What we did instead:** `partial` is implemented in `proxy/mutators.py` with unit and end-to-end tests, but not added to `fault_profiles` yet.
-- **Why:** adding it changes the run config, and the dev run of record (above) refuses to resume with a different config. It can be added before the next run (40 more fault episodes, about 0.08 EUR at the pilot's costs).
-- **Effect on results:** the M2 fault results cover the six P0 profiles only.
+- **What we did instead:** `partial` is implemented in `proxy/mutators.py` with unit and end-to-end tests. In M3 (step 2 of the M3 prompt) it is added to `fault_profiles` in `configs/full.yaml` only, so the confirmatory (standard-suite) run includes all seven profiles. `configs/dev.yaml` and `configs/local.yaml` keep the six P0 profiles, so the dev run of record keeps the same config across resumes and the M2/M3 dev fault numbers stay comparable.
+- **Why:** adding `partial` to a config changes its hash, and a run refuses to resume with a different config. Keeping it out of dev.yaml preserves the dev run of record; putting it in full.yaml means the only fresh run that will use it (the confirmatory one, after PRE_REGISTRATION is FINAL) measures the full P1 profile set. Asked by Saad in the M3 prompt.
+- **Effect on results:** the M2 and M3 dev fault results cover the six P0 profiles only; the confirmatory run will add `partial` (about 40 more fault episodes on the standard suite).
 
 ## 2026-10-03: how paraphrases are generated and checked
 - **What the spec said:** SPEC 5.6: P paraphrases per task with the redteam model, cached, each passing a literal check (paths, file names, numbers, quoted strings, table and column names) and an LLM equivalence check, max 3 tries, then drop and log.
