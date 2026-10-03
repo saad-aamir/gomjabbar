@@ -98,6 +98,13 @@ _RETRY_IN_RE = re.compile(r"try again in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s", re.IG
 # A per-day 429 that says to retry within this many seconds is waited out, not treated as the
 # end of the day: a rolling daily window (seen on Groq) can free up in minutes.
 DAILY_WAIT_MAX_S = 900.0
+# gpt-oss writes its replies in OpenAI's Harmony format. When the provider's Harmony parser
+# rejects a sampled reply, OpenRouter passes on an HTTP 400 such as "Upstream error from
+# CoreWeave: unexpected tokens remaining in message header". That is a parse failure of one
+# sample, not a bad request, so it is retried like Groq's output_parse_failed.
+_HARMONY_PARSE_RE = re.compile(
+    r"unexpected tokens? (remaining in message|while expecting)", re.IGNORECASE
+)
 # The account has no credit left (OpenRouter answers 402, or 403 once a key's own spending
 # limit is reached). Retrying cannot help, and the episode is not the model's fault.
 _CREDITS_RE = re.compile(
@@ -156,9 +163,11 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
         "tool_use_failed" in text
         or "output_parse_failed" in text
         or "failed to call a function" in text.lower()
+        or _HARMONY_PARSE_RE.search(text)
     ):
         # The provider could not parse the model's output (for example Groq's tool_use_failed
-        # or output_parse_failed, seen in the first M1 pilot). Sampling again usually works, so this
+        # or output_parse_failed, seen in the first M1 pilot, or CoreWeave's Harmony parser
+        # error, seen in the first OpenRouter pilot). Sampling again usually works, so this
         # is retried like a transient error (it still counts against the quota).
         return ErrorVerdict("retry", 1.0, text[:300])
 

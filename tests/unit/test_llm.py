@@ -159,3 +159,13 @@ def test_configured_price_is_the_fallback(monkeypatch):
     # No cost in the response: 1,200 tokens at 1 USD per million = 0.0012 USD = 0.0006 EUR.
     reply, _ = run_client(monkeypatch, {"price_usd_per_mtok": 1.0}, cost=None)
     assert abs(reply.cost_eur - 0.0006) < 1e-12
+
+
+def test_harmony_parse_error_retries():
+    # Seen in the first OpenRouter pilot (2026-10-03): CoreWeave's parser rejected one sample.
+    exc = FakeAPIError(
+        "litellm.BadRequestError: OpenrouterException - Upstream error from CoreWeave: "
+        'unexpected tokens remaining in message header: Some("file size is 1200 bytes")',
+        400,
+    )
+    assert classify_error(exc, 1).action == "retry"

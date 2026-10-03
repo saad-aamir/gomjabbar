@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: Harmony parse errors from the provider are retried
+- **What the spec said:** retry on transient API errors (SPEC 5.3); a 400 is fatal and ends the episode as `llm_error`.
+- **What we did instead:** an HTTP 400 whose text says "unexpected tokens remaining in message header" (or "unexpected token ... while expecting") is retried like Groq's `output_parse_failed`, which was already retried. The first OpenRouter pilot (`runs/pilot-dev-20261003-031537`) was stopped after its first episode ended as `llm_error` on exactly this error, and a fresh pilot was started after the fix; the stopped one is kept for the record.
+- **Why:** it is CoreWeave's parser rejecting one sampled gpt-oss reply (the Harmony chat format), not a malformed request. Sampling again usually works. Scoring it as a model failure would measure the provider's parser.
+- **Effect on results:** fewer `llm_error` episodes; every retry is still counted in `llm_requests` and in cost.
+
 ## 2026-10-03: pilot restarted from scratch on OpenRouter
 - **What the spec said:** M1 step 14: run `pilot` with 3 tasks for each model, then `estimate`.
 - **What we did instead:** the Groq pilot `runs/pilot-dev-20261002-182600` (2 of 6 episodes finished) is kept in git for the record but not used. A new pilot with the OpenRouter config was run from scratch, and `estimate` uses only that one.
