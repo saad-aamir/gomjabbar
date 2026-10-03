@@ -153,3 +153,53 @@ async def test_malformed_names_and_parse_retries_are_counted(tmp_path):
     assert [e.payload["name"] for e in flagged] == ["write_note<|channel|>commentary"]
     # The server rejected the malformed call; the correct second call wrote the note.
     assert json.loads((tmp_path / "notes.json").read_text()) == {"a": "hello"}
+
+
+# ---- empty replies are re-sampled (DEVIATIONS.md, 2026-10-03) ----------------------------------
+
+
+async def test_empty_reply_is_resent_unchanged(tmp_path):
+    from tests.fixtures.scripted_llm import empty
+
+    outcome, trace, llm, _ = await run_script(
+        tmp_path,
+        [
+            call("write_note", name="a", text="hello"),
+            empty(),  # lost turn: re-sampled, not shown to the model again
+            call("read_note", name="a"),
+            final("DONE"),
+        ],
+    )
+    # The re-sent request carried exactly the same conversation as the empty one.
+    assert llm.seen[1] == llm.seen[2]
+    # The empty reply is not part of the conversation afterwards.
+    assert all(
+        m.get("content") != "" or m.get("tool_calls")
+        for m in llm.seen[3][2:]
+        if m["role"] == "assistant"
+    )
+    assert outcome.final_claim == "done"
+    assert outcome.steps == 3  # a re-sample is not a step
+    assert outcome.llm_requests == 4  # but it is a request
+    assert outcome.empty_resamples == 1
+    assert outcome.empty_stopped == 1 and outcome.empty_dropped_call == 0
+    flagged = [e.payload for e in trace.events if e.payload.get("empty_reply")]
+    assert flagged == [{**flagged[0], "empty_reply": "stopped_after_reasoning", "resampled": True}]
+
+
+async def test_empty_reply_ends_the_episode_after_three_resamples(tmp_path):
+    from tests.fixtures.scripted_llm import empty
+
+    outcome, trace, llm, _ = await run_script(
+        tmp_path, [empty(tokens_out=60), empty(), empty(tokens_out=60), empty(), final("DONE")]
+    )
+    # Three re-samples, then the fourth empty reply is the final answer, as before.
+    assert outcome.stop_reason == "final_answer"
+    assert outcome.final_claim == "none"
+    assert outcome.steps == 1
+    assert outcome.empty_resamples == 3
+    # Every empty reply is classified: 60 output tokens with a short reasoning is a lost call.
+    assert outcome.empty_dropped_call == 2 and outcome.empty_stopped == 2
+    assert len(llm.seen) == 4  # the scripted DONE was never asked for
+    resampled = [e.payload["resampled"] for e in trace.events if "empty_reply" in e.payload]
+    assert resampled == [True, True, True, False]

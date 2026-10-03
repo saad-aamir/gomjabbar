@@ -61,3 +61,29 @@ def test_tool_error_prefixed():
         content=[types.TextContent(type="text", text="boom")], isError=True
     )
     assert tool_result_text(result) == "Tool error: boom"
+
+
+def test_empty_reply_detection_and_kind():
+    from pruefstand.agent.llm import LLMReply, ToolCall
+    from pruefstand.agent.loop import empty_reply_kind, is_empty_reply
+
+    def reply(content="", calls=(), finish="stop", tokens_out=10, reasoning="List the dir."):
+        return LLMReply(
+            content=content,
+            tool_calls=list(calls),
+            message={},
+            tokens_out=tokens_out,
+            finish_reason=finish,
+            extra={"reasoning": reasoning},
+        )
+
+    assert is_empty_reply(reply())
+    assert is_empty_reply(reply(content="  \n"))
+    assert not is_empty_reply(reply(content="DONE"))
+    assert not is_empty_reply(reply(calls=[ToolCall("c1", "list_directory", "{}")]))
+    # Cut off by the token limit is a different problem, not re-sampled.
+    assert not is_empty_reply(reply(finish="length"))
+    # "List the dir." is 13 characters, about 3 tokens: 10 output tokens leave 7 hidden.
+    assert empty_reply_kind(reply(tokens_out=10)) == "stopped_after_reasoning"
+    # 40 output tokens leave about 37 hidden: a tool call was generated and lost.
+    assert empty_reply_kind(reply(tokens_out=40)) == "dropped_call"

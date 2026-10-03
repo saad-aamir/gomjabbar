@@ -123,3 +123,24 @@ def test_estimate_converts_pilot_euros_to_the_planned_rate():
     (e,) = estimate(cfg, specs, pilot, pilot_usd_to_eur=4.0)
     assert round(e.cost_eur, 6) == 1.0
     assert round(e.cost_usd, 6) == 1.0
+
+
+def test_summary_reports_empty_replies_and_the_mcpmark_rule():
+    # Two attempts on one task, both pass; the second needed one empty-reply re-sample.
+    results = [
+        make_result(make_spec(model="m", attempt=0), steps=4),
+        make_result(
+            make_spec(model="m", attempt=1),
+            steps=4,
+            empty_reply_resamples=1,
+            empty_replies_stopped=1,
+        ),
+    ]
+    text = summary_text(results, k=2, seed=1)
+    # Normal scoring: both pass. MCPMark rule: the re-sampled episode fails.
+    assert "pass@1 (state)    1.000" in text
+    assert "MCPMark rule      pass@1 0.500" in text
+    assert "MCPMark rule      pass^2 0.000" in text
+    # 1 empty reply out of 9 replies (8 steps + 1 re-sampled reply).
+    assert "empty replies     1 / 9 replies = 0.111" in text
+    assert "1 re-samples in 1/2 episodes" in text

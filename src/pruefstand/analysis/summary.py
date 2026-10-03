@@ -1,7 +1,8 @@
 """Plain-text summary of a run: the M1 terminal report card.
 
 What: per model, pass@1 and pass^k with 95% task-level bootstrap intervals, strict pass@1,
-false-success rate, stop reasons, average effort per episode, provider parse-failure rate,
+the same two under the "MCPMark rule" (episodes that needed an empty-reply re-sample count as
+failed), false-success rate, the empty-reply rate, stop reasons, average effort per episode, provider parse-failure rate,
 malformed tool names and the serving providers.
 Why: M1's gate asks for these numbers in the terminal; the HTML report comes in M3.
 How: `pruefstand report RUN_DIR --text` and the end of `run` and `pilot` call `summary_text`.
@@ -12,11 +13,13 @@ from __future__ import annotations
 from collections import Counter
 
 from pruefstand.analysis.metrics import (
+    empty_reply_rate,
     false_success_rate,
     incomplete_tasks,
     model_results,
     per_task_pass_hat_k,
     per_task_pass_rate,
+    under_mcpmark_rule,
 )
 from pruefstand.analysis.stats import bootstrap_mean
 from pruefstand.models import Condition, EpisodeResult
@@ -50,6 +53,17 @@ def summary_text(results: list[EpisodeResult], k: int, seed: int) -> str:
             missing = incomplete_tasks(rows, k)
             note = f"  ({len(missing)} tasks with < {k} attempts left out)" if missing else ""
             lines.append(f"   pass^{k} (state)    {bootstrap_mean(hat, seed)}{note}")
+        # Sensitivity: MCPMark's agent ends a task at the first empty reply, so an episode
+        # that needed a re-sample counts as failed here.
+        strict_rows = under_mcpmark_rule(rows)
+        lines.append(
+            f"   MCPMark rule      pass@1 {bootstrap_mean(per_task_pass_rate(strict_rows), seed)}"
+        )
+        if k > 1:
+            lines.append(
+                f"   MCPMark rule      pass^{k} "
+                f"{bootstrap_mean(per_task_pass_hat_k(strict_rows, k), seed)}"
+            )
         lines.append(f"   false success     {false_success_rate(rows):.3f}")
         stops = Counter(r.stop_reason for r in rows)
         lines.append(
@@ -73,6 +87,18 @@ def summary_text(results: list[EpisodeResult], k: int, seed: int) -> str:
         lines.append(
             f"   parse failures    {parse_retries} retries / {requests} requests = {rate:.3f}"
             f", in {parse_eps}/{n} episodes"
+        )
+        # Empty replies (no text, no tool call): re-sampled up to 3 times per step.
+        empties, replies = empty_reply_rate(rows)
+        dropped = sum(r.empty_replies_dropped_call for r in rows)
+        stopped = sum(r.empty_replies_stopped for r in rows)
+        resamples = sum(r.empty_reply_resamples for r in rows)
+        resampled_eps = sum(1 for r in rows if r.empty_reply_resamples)
+        lines.append(
+            f"   empty replies     {empties} / {replies} replies = "
+            f"{empties / replies if replies else 0.0:.3f} "
+            f"(dropped call {dropped}, stopped after reasoning {stopped}); "
+            f"{resamples} re-samples in {resampled_eps}/{n} episodes"
         )
         # Tool names with a leaked Harmony token, such as "write_file<|channel|>commentary".
         malformed = sum(r.malformed_tool_names for r in rows)

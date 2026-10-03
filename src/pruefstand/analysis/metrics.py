@@ -71,3 +71,22 @@ def model_results(
         if r.spec.model == model
         and not (exclude_transport_failures and r.stop_reason == "transport_failure")
     ]
+
+
+def under_mcpmark_rule(results: list[EpisodeResult]) -> list[EpisodeResult]:
+    """The results as MCPMark's agent would have scored them: any episode that needed an
+    empty-reply re-sample counts as failed, because MCPMark ends the task at the first empty
+    reply (docs/notes/empty-replies.md). A sensitivity check, not a headline metric."""
+    return [
+        r.model_copy(update={"passed": False, "strict_passed": False})
+        if r.empty_reply_resamples
+        else r
+        for r in results
+    ]
+
+
+def empty_reply_rate(results: list[EpisodeResult]) -> tuple[int, int]:
+    """(empty replies, model replies). Model replies are steps plus re-sampled replies."""
+    empties = sum(r.empty_replies_dropped_call + r.empty_replies_stopped for r in results)
+    replies = sum(r.steps + r.empty_reply_resamples for r in results)
+    return empties, replies

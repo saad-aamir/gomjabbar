@@ -30,7 +30,7 @@ from mcp import ClientSession, StdioServerParameters, types
 from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
 
-from pruefstand.agent.llm import ChatModel, LLMError, QuotaExhausted
+from pruefstand.agent.llm import ChatModel, LLMError, LLMReply, QuotaExhausted
 from pruefstand.agent.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION
 from pruefstand.models import StopReason, TraceEvent, TraceKind
 
@@ -43,6 +43,15 @@ TRUNCATION_MARKER = "\n[truncated]"
 HARD_TIMEOUT_FACTOR = 6
 # Prefix of environment variables that must never reach the server under test.
 SECRET_ENV_PREFIX = "PFS_"
+# An empty reply is re-sent at most this many times per step (DEVIATIONS.md, 2026-10-03).
+MAX_EMPTY_RESAMPLES = 3
+# Output tokens of an empty reply that do not show up as text are "hidden". This many or
+# more means a tool call was generated and lost; fewer means the model stopped after its
+# reasoning. In the M1 baseline the empty replies split into 2 to 19 hidden tokens and 32 to
+# 50, and normal tool-call replies had a median of 33 (docs/notes/empty-replies.md).
+DROPPED_CALL_MIN_HIDDEN_TOKENS = 25
+# Rough characters per token, used to turn visible text into a token count.
+CHARS_PER_TOKEN = 4
 
 
 def server_environment(
@@ -148,6 +157,10 @@ class AgentOutcome:
     parse_retries: int = 0
     # Tool calls whose name carries a leaked Harmony token, e.g. "write_file<|channel|>commentary".
     malformed_tool_names: int = 0
+    # Re-sent requests after an empty reply, and every empty reply by kind (re-sampled or not).
+    empty_resamples: int = 0
+    empty_dropped_call: int = 0  # a tool call was generated but lost (hidden output tokens)
+    empty_stopped: int = 0  # the model stopped after its reasoning
     quota_exhausted: bool = False  # the model could not be used any more (quota, credit, key)
     # True for a provider's daily quota (remembered until the next UTC day), False for an
     # account problem such as missing credit or a rejected key (pauses this invocation only).
@@ -196,6 +209,26 @@ def tool_result_text(result: types.CallToolResult) -> str:
     if result.isError:
         text = "Tool error: " + text
     return truncate(text)
+
+
+def is_empty_reply(reply: LLMReply) -> bool:
+    """True for a reply with no text, no tool call and finish_reason "stop".
+
+    Such a reply neither answers nor acts. With gpt-oss it means the provider lost the tool
+    call or the model ended its turn after reasoning (docs/notes/empty-replies.md).
+    """
+    return not reply.content.strip() and not reply.tool_calls and reply.finish_reason == "stop"
+
+
+def empty_reply_kind(reply: LLMReply) -> str:
+    """ "dropped_call" or "stopped_after_reasoning", from the reply's hidden output tokens."""
+    reasoning = reply.extra.get("reasoning") or ""
+    # Tokens explained by the text we can see (reasoning and content).
+    visible = (len(reasoning) + len(reply.content)) / CHARS_PER_TOKEN
+    hidden = reply.tokens_out - visible
+    if hidden >= DROPPED_CALL_MIN_HIDDEN_TOKENS:
+        return "dropped_call"
+    return "stopped_after_reasoning"
 
 
 def truncate(text: str) -> str:
@@ -364,59 +397,12 @@ class AgentSession:
             if self._tools_changed:
                 await self._refresh_tools()
 
-            # 1. Ask the model.
-            self.trace.add(
-                "llm_request", {"n_messages": len(self.messages), "n_tools": len(self.tools)}
-            )
-            try:
-                reply = await self.llm.complete(self.messages, self.tools)
-            except QuotaExhausted as exc:
-                outcome.llm_requests += exc.attempts
-                outcome.parse_retries += exc.parse_retries
-                outcome.stop_reason = "llm_error"
-                outcome.quota_exhausted = True
-                outcome.quota_daily = exc.daily
-                outcome.error = str(exc)
-                self.trace.add("error", {"where": "llm", "error": str(exc), "quota": True})
-                return
-            except LLMError as exc:
-                outcome.llm_requests += exc.attempts
-                outcome.parse_retries += exc.parse_retries
-                outcome.stop_reason = "llm_error"
-                outcome.error = str(exc)
-                self.trace.add(
-                    "error",
-                    {"where": "llm", "error": str(exc), "parse_retries": exc.parse_retries},
-                )
+            # 1. Ask the model; empty replies are re-sampled inside _ask_model.
+            reply = await self._ask_model(outcome)
+            if reply is None:
+                # The model call failed for good (llm_error or a paused model).
                 return
             outcome.steps += 1
-            outcome.tokens_in += reply.tokens_in
-            outcome.tokens_out += reply.tokens_out
-            outcome.tokens_cached += reply.tokens_cached
-            outcome.cost_eur += reply.cost_eur
-            if reply.provider:
-                outcome.providers.add(reply.provider)
-            outcome.llm_requests += reply.attempts
-            outcome.parse_retries += reply.parse_retries
-            outcome.model_version = reply.model_version or outcome.model_version
-            outcome.throttle_s += reply.throttle_s
-            self._throttle_s += reply.throttle_s
-            self.trace.add(
-                "llm_response",
-                {
-                    "message": reply.message,
-                    "finish_reason": reply.finish_reason,
-                    "throttle_s": round(reply.throttle_s, 3),
-                    "provider": reply.provider,
-                    "tokens_cached": reply.tokens_cached,
-                    "cost_eur": reply.cost_eur,
-                    "parse_retries": reply.parse_retries,
-                    **reply.extra,
-                },
-                tokens_in=reply.tokens_in,
-                tokens_out=reply.tokens_out,
-                latency_ms=reply.latency_ms,
-            )
             self.messages.append(reply.message)
             if reply.content:
                 outcome.final_message = reply.content
@@ -444,6 +430,95 @@ class AgentSession:
                 )
         # Fell out of the while: the step budget is used up.
         outcome.stop_reason = "max_steps"
+
+    async def _ask_model(self, outcome: AgentOutcome) -> LLMReply | None:
+        """One model step: ask, and re-send the identical request while the reply is empty.
+
+        An empty reply (no text, no tool call, finish_reason "stop") is a gpt-oss output
+        the provider could not turn into a call or an answer (docs/notes/empty-replies.md).
+        The same request is sent again up to MAX_EMPTY_RESAMPLES times; if the reply is
+        still empty, it is returned and the loop treats it as the final answer, as before.
+        Every reply, kept or re-sampled, is accounted and traced. Returns None when the model
+        call fails for good (the outcome then says why).
+        """
+        resamples = 0
+        while True:
+            self.trace.add(
+                "llm_request", {"n_messages": len(self.messages), "n_tools": len(self.tools)}
+            )
+            try:
+                reply = await self.llm.complete(self.messages, self.tools)
+            except QuotaExhausted as exc:
+                outcome.llm_requests += exc.attempts
+                outcome.parse_retries += exc.parse_retries
+                outcome.stop_reason = "llm_error"
+                outcome.quota_exhausted = True
+                outcome.quota_daily = exc.daily
+                outcome.error = str(exc)
+                self.trace.add("error", {"where": "llm", "error": str(exc), "quota": True})
+                return None
+            except LLMError as exc:
+                outcome.llm_requests += exc.attempts
+                outcome.parse_retries += exc.parse_retries
+                outcome.stop_reason = "llm_error"
+                outcome.error = str(exc)
+                self.trace.add(
+                    "error",
+                    {"where": "llm", "error": str(exc), "parse_retries": exc.parse_retries},
+                )
+                return None
+
+            # Tokens, cost and requests count for every reply, including re-sampled ones.
+            self._account(outcome, reply)
+            empty = is_empty_reply(reply)
+            # Classify every empty reply, the last unrecovered one included.
+            kind = empty_reply_kind(reply) if empty else None
+            if kind == "dropped_call":
+                outcome.empty_dropped_call += 1
+            elif kind == "stopped_after_reasoning":
+                outcome.empty_stopped += 1
+            resample = empty and resamples < MAX_EMPTY_RESAMPLES
+            extra = {}
+            if empty:
+                # Marked in the trace so the analysis can find and re-check every case.
+                extra = {"empty_reply": kind, "resampled": resample}
+            self.trace.add(
+                "llm_response",
+                {
+                    "message": reply.message,
+                    "finish_reason": reply.finish_reason,
+                    "throttle_s": round(reply.throttle_s, 3),
+                    "provider": reply.provider,
+                    "tokens_cached": reply.tokens_cached,
+                    "cost_eur": reply.cost_eur,
+                    "parse_retries": reply.parse_retries,
+                    **extra,
+                    **reply.extra,
+                },
+                tokens_in=reply.tokens_in,
+                tokens_out=reply.tokens_out,
+                latency_ms=reply.latency_ms,
+            )
+            if not resample:
+                return reply
+            # Same messages, same tools: the request is sent again unchanged. The empty reply
+            # is not added to the conversation.
+            resamples += 1
+            outcome.empty_resamples += 1
+
+    def _account(self, outcome: AgentOutcome, reply: LLMReply) -> None:
+        """Add one reply's tokens, cost, requests and provider to the episode totals."""
+        outcome.tokens_in += reply.tokens_in
+        outcome.tokens_out += reply.tokens_out
+        outcome.tokens_cached += reply.tokens_cached
+        outcome.cost_eur += reply.cost_eur
+        if reply.provider:
+            outcome.providers.add(reply.provider)
+        outcome.llm_requests += reply.attempts
+        outcome.parse_retries += reply.parse_retries
+        outcome.model_version = reply.model_version or outcome.model_version
+        outcome.throttle_s += reply.throttle_s
+        self._throttle_s += reply.throttle_s
 
     async def _execute(self, name: str, raw_arguments: str) -> str:
         """Run one tool call and return the text for the model. Raises TransportDead."""
