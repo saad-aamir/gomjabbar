@@ -46,9 +46,13 @@ PG_PASSWORD = "pruefstand"
 
 # The postgres MCP server MCPMark uses (src/agents/base_agent.py:222), started with uvx
 # instead of pipx. postgres-mcp 0.3.0 does not pin the MCP SDK and breaks on mcp 2.x, so
-# the SDK is pinned to the 1.x version the harness itself uses (DEVIATIONS.md).
+# the SDK is pinned to the 1.x version the harness itself uses (DEVIATIONS.md). The server
+# needs Python 3.12 or newer; the interpreter is pinned so an inherited UV_PYTHON (GitHub's
+# setup-uv sets 3.11) cannot make uvx fail to resolve it.
 POSTGRES_SERVER_COMMAND = [
     "uvx",
+    "--python",
+    "3.12",
     "--with",
     "mcp==1.30.0",
     "postgres-mcp==0.3.0",

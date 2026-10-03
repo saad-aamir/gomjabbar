@@ -18,5 +18,6 @@ jobs:
       # Lint and format check.
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      # Unit and integration tests (fake server and scripted LLM only).
-      - run: uv run pytest -q
+      # Unit and integration tests (fake server and scripted LLM only). Tests marked
+      # `postgres` need Docker and skip here with a reason; -rs prints the reasons.
+      - run: uv run pytest -q -rs

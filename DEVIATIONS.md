@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: postgres tests are skipped in CI
+- **What the spec said:** CI runs `uv sync`, `ruff check`, `pytest`; no paid calls, no Docker, no Ollama (SPEC 13).
+- **What we did instead:** tests that need the PostgreSQL container are marked `postgres` and skipped when `CI=true` (and wherever the container cannot be started), with the reason printed by `pytest -rs` (`tests/conftest.py`). They run in cloud sessions and locally with Docker.
+- **Why:** asked by Saad after CI failed. Before, the tests started the Docker container on the GitHub runner themselves, against SPEC 13. A Postgres service container in the workflow would also be Docker, so skipping follows the spec.
+- **Effect on results:** none; CI no longer covers postgres isolation, which must be checked in a session with Docker.
+
 ## 2026-10-03: one dev run of record for M1 and M2, resumed at a newer commit
 - **What the spec said:** nothing on how runs are organized; the M1 baseline was its own run.
 - **What we did instead:** `runs/dev-20261003-052646` is the run of record for the dev suite. Its filesystem baseline started in a git worktree pinned at the commit that introduced the new rules (`a847da9`), so M2 code changes could not reach running episodes. After 7 episodes it was stopped, moved into the repo and resumed with `--resume` at a later commit for the rest of the baseline (filesystem and postgres), then `--only paraphrase` and `--only fault`. Every row records the commit that ran it (`git_commit`). Episodes in flight when the worktree run stopped were not written and reran on resume. `runs/dev-20261003-033437` (provider-default temperature, no re-sampling) is kept for the record only.
@@ -36,7 +42,7 @@ Format:
 
 ## 2026-10-03: postgres-mcp started with uvx and a pinned MCP SDK
 - **What the spec said:** reuse MCPMark's server launch command, `pipx run postgres-mcp==0.3.0 --access-mode=unrestricted` with `DATABASE_URI` (SPEC 2.1, `docs/notes/mcpmark-interface.md`).
-- **What we did instead:** `uvx --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted`, same `DATABASE_URI`.
+- **What we did instead:** `uvx --python 3.12 --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted`, same `DATABASE_URI`. `--python 3.12` was added the same day after CI failed: postgres-mcp 0.3.0 requires Python 3.12 or newer, and an inherited `UV_PYTHON=3.11` (set by GitHub's setup-uv) made uvx unable to resolve it, so the server exited before `initialize`. In the cloud VM uvx had picked 3.12 by itself, so results are unaffected.
 - **Why:** `pipx` is not installed in the cloud VM; `uvx` runs the same PyPI package (approved by Saad). `postgres-mcp` 0.3.0 does not pin the MCP SDK, and a fresh install today pulls `mcp` 2.x, on which the server dies at import. 1.30.0 is the 1.x SDK the harness itself uses.
 - **Effect on results:** none expected; same server version and tools. Other transitive dependencies resolve to their current versions.
 

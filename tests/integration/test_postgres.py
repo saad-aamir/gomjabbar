@@ -1,7 +1,8 @@
 """Integration tests for the postgres sandbox and server, against the local container.
 
-Skipped when no PostgreSQL container can be started (CI has no Docker, SPEC 13). In the cloud
-session they use the same container and templates as real runs.
+Marked `postgres`: skipped in CI (no Docker there, SPEC 13) and wherever the container cannot
+be started (tests/conftest.py). In the cloud session they use the same container and
+templates as real runs.
 """
 
 import asyncio
@@ -11,9 +12,8 @@ import pytest
 from pruefstand.sandbox import postgres
 from pruefstand.sandbox.postgres import PostgresSandbox
 
-pytestmark = pytest.mark.skipif(
-    not postgres.service_available(), reason="no PostgreSQL container available"
-)
+# Needs the container; skipped in CI and without Docker (tests/conftest.py).
+pytestmark = pytest.mark.postgres
 
 # A real easy task's category, so the test uses a real MCPMark template.
 CATEGORY = "chinook"
@@ -110,7 +110,16 @@ def test_scripted_episode_through_proxy_and_postgres_server(tmp_path):
             return names, await session.run(task.description)
 
     try:
-        names, outcome = asyncio.run(episode())
+        try:
+            names, outcome = asyncio.run(episode())
+        except Exception as exc:
+            # Show why the server died, which otherwise stays in a temporary file.
+            stderr = (
+                (tmp_path / "stderr.log").read_text() if (tmp_path / "stderr.log").exists() else ""
+            )
+            raise AssertionError(
+                f"episode failed: {exc!r}; server stderr:\n{stderr[-3000:]}"
+            ) from exc
         assert "execute_sql" in names
         assert outcome.final_claim == "done"
         # The model saw the query result through the proxy.
