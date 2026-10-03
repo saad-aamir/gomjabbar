@@ -51,7 +51,7 @@ You are most likely in a **Claude Code cloud session**: an Ubuntu 24.04 VM (4 vC
 - **Commit and push often.** Anything not pushed can vanish when the VM is reclaimed. Push after every passing feature, and use `--checkpoint-every` for runs.
 - **PostgreSQL 16 is preinstalled but stopped.** Start it with `service postgresql start`. Prefer it over Docker.
 - **No Ollama here.** Cloud runs use API models only. `configs/local.yaml` is for Saad's Mac.
-- **The harness uses free models on Groq by default, key in `PFS_GROQ_API_KEY`.** They are quota-limited, so runs throttle themselves and stop cleanly when a daily quota is used up (SPEC 5.5). Never read, set or export `ANTHROPIC_API_KEY`.
+- **The harness uses paid gpt-oss models through OpenRouter, key in `PFS_OPENROUTER_API_KEY`,** pinned to one upstream provider with fallbacks off (`docs/notes/openrouter.md`). Runs stop cleanly before they would cross the config's `spend_cap_eur` (SPEC 5.5). Never read, set or export `ANTHROPIC_API_KEY`.
 - **Network is an allowlist.** If something you need is blocked (a download host for MCPMark data, for example), stop and tell Saad the exact host. Do not look for workarounds.
 - **Long runs go in the background, in chunks.** Start them with `nohup ... &`, one condition at a time (`--only`), and check progress with `tail` instead of waiting on a single long command.
 
@@ -59,7 +59,7 @@ You are most likely in a **Claude Code cloud session**: an Ubuntu 24.04 VM (4 vC
 
 - Never modify anything under `vendor/` (creating the vendored copy in the first session is the one exception). MCPMark is a vendored, pinned copy (commit in `vendor/MCPMARK_COMMIT`).
 - Never commit secrets. API keys live in `.env`, which is gitignored. Canary secrets used in tests are fake by design.
-- Never call a paid model. The configs use free models only (`spend_cap_eur: 0`). If something seems to need a paid model, stop and ask Saad.
+- Only call paid models in a run whose config has spend_cap_eur above 0, set by Saad. Never raise a spend cap yourself.
 - Never run the `full` suite until `PRE_REGISTRATION.md` has `Status: FINAL` at the top. Saad finalizes it, not you.
 - Only test MCP servers started locally by this project. No requests to third-party services except the model APIs.
 - A grader or judge error must abort the write of that result. Never write a partial or default result.

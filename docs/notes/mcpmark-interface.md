@@ -16,7 +16,8 @@ What Prüfstand needs to know about MCPMark to reuse its tasks, initial states a
 | `storage.mcpmark.ai` | Filesystem initial states (`/filesystem/<category>.zip`) and Postgres sample databases (`/postgres/<db>.backup`) | Yes, since 2026-10-02 (added to the allowed domains by Saad; `file_property.zip` downloaded, HTTP 200). |
 | `registry.npmjs.org` | `npx -y @modelcontextprotocol/server-filesystem@2025.12.18` | Yes |
 | `pypi.org`, `files.pythonhosted.org` | `postgres-mcp==0.3.0` (M2) | Yes |
-| `api.groq.com` | Agent models | Yes (HTTP 200 with `PFS_GROQ_API_KEY`) |
+| `openrouter.ai` | Agent models since 2026-10-03 (`docs/notes/openrouter.md`) | Yes (HTTP 200 with `PFS_OPENROUTER_API_KEY`) |
+| `api.groq.com` | Agent models until 2026-10-03, no longer used | Yes |
 
 No other host is needed for the filesystem and postgres services. (The Notion, GitHub, Playwright, Supabase and Insforge services reference other hosts, but Prüfstand does not use them.)
 

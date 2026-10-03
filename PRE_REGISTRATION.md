@@ -9,7 +9,7 @@ Numbers in [brackets] are proposals to review, not decisions.
 ## Setup
 
 - Tasks: MCPMark filesystem and postgres, `standard` suite, commit recorded in `docs/notes/mcpmark-interface.md`.
-- Models: [groq/openai/gpt-oss-20b, groq/openai/gpt-oss-120b], free tier.
+- Models: [openrouter/openai/gpt-oss-20b, openrouter/openai/gpt-oss-120b], paid, both pinned to one OpenRouter upstream provider (`coreweave/fp4`, see `docs/notes/openrouter.md`), spend cap set by Saad.
 - Agent: `SYSTEM_PROMPT_V1`, max 40 steps, provider-default temperature.
 - Seed: 20261002.
 

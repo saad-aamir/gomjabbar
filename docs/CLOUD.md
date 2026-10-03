@@ -13,10 +13,10 @@ Facts about the environment this repo is built in, and the rules that follow fro
 ## The environment Saad configures at claude.ai/code
 
 - **Name:** `pruefstand`
-- **Network access:** Custom. Tick "Also include default list of common package managers" (that keeps PyPI, npm, GitHub and Docker Hub) and add `api.groq.com` to the allowed domains. If MCPMark needs another host (for example to download initial states), add only that host too.
+- **Network access:** Custom. Tick "Also include default list of common package managers" (that keeps PyPI, npm, GitHub and Docker Hub) and add `openrouter.ai` to the allowed domains (the model API; `api.groq.com` is no longer needed since 2026-10-03). If MCPMark needs another host (for example to download initial states), add only that host too.
 - **Environment variables:**
   ```
-  PFS_GROQ_API_KEY=<your free Groq API key>
+  PFS_OPENROUTER_API_KEY=<your OpenRouter API key>
   BASH_DEFAULT_TIMEOUT_MS=300000
   BASH_MAX_TIMEOUT_MS=600000
   ```
@@ -34,7 +34,7 @@ Facts about the environment this repo is built in, and the rules that follow fro
 
 ## What this means for the code
 
-- Harness model calls use free Groq models with `PFS_GROQ_API_KEY`, passed explicitly to LiteLLM. They are quota-limited: long runs stop when a daily quota is used up and resume the next day.
+- Harness model calls go to gpt-oss-20b and gpt-oss-120b on OpenRouter with `PFS_OPENROUTER_API_KEY`, passed explicitly to LiteLLM, pinned to one upstream provider (`docs/notes/openrouter.md`). They are paid: a run only starts when its config has `spend_cap_eur` above 0, set by Saad, and it stops cleanly before crossing that cap. If the account runs out of credit, the run pauses like an exhausted quota and continues with `--resume`. (Until 2026-10-03 the harness used Groq's free tier; see `DEVIATIONS.md`.)
 - No Ollama models in cloud configs. `configs/local.yaml` exists for Saad's Mac.
 - Postgres: native service first, Docker only as a fallback.
 - Results are committed in checkpoints (SPEC section 4, Persistence).

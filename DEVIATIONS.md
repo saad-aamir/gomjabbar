@@ -10,6 +10,60 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: pilot restarted from scratch on OpenRouter
+- **What the spec said:** M1 step 14: run `pilot` with 3 tasks for each model, then `estimate`.
+- **What we did instead:** the Groq pilot `runs/pilot-dev-20261002-182600` (2 of 6 episodes finished) is kept in git for the record but not used. A new pilot with the OpenRouter config was run from scratch, and `estimate` uses only that one.
+- **Why:** different serving stack, provider and limits; the Groq episodes are not comparable. Decided by Saad.
+- **Effect on results:** none on the M1 numbers, which come only from OpenRouter runs.
+
+## 2026-10-03: gpt-oss-20b tool-name leak is not repaired
+- **What the spec said:** nothing; the loop passes tool calls to the server as the model wrote them (SPEC 5.3).
+- **What we did instead:** nothing is changed. On OpenRouter, gpt-oss-20b sometimes returns a tool name with a piece of its Harmony chat format attached (`write_file<|channel|>commentary`). The server answers "unknown tool", the model sees the error and can retry.
+- **Why:** seen on CoreWeave, DeepInfra and Parasail at similar rates, never on 120b (`docs/notes/openrouter.md`). Repairing the name would change the agent and make the harness more forgiving than MCPMark's. Groq rejected such output as `tool_use_failed` and we retried, so the effect was hidden before.
+- **Effect on results:** gpt-oss-20b loses some steps (and sometimes episodes) to these errors. Countable from traces (`tool_call` names containing `<|`).
+
+## 2026-10-03: out-of-credits answers pause the model like an exhausted quota
+- **What the spec said:** SPEC 5.5 handles daily-quota 429s; any other API error ends the episode as `llm_error`.
+- **What we did instead:** OpenRouter's 402 ("Insufficient credits") and "Key limit exceeded" are classified like a daily-quota 429: the model is marked exhausted, the episode in flight is not written, and the run stops cleanly so `--resume` can continue after credit is added.
+- **Why:** otherwise every remaining episode would be scored as `llm_error`, which is a billing problem, not a model result.
+- **Effect on results:** none.
+
+## 2026-10-03: estimate reports hours and dollars
+- **What the spec said:** `estimate` projects episodes, requests, euros and days at `rpd_limit` (SPEC 11).
+- **What we did instead:** it also prints serial episode hours per model, the run's wall time at the config's `concurrency`, the cost in USD (euros divided by `usd_to_eur`) and the run total against `spend_cap_eur`. Days at `rpd_limit` and `tpd_limit` are only printed for models that have those limits.
+- **Why:** paid models have no daily limits; what Saad approves is euros and hours.
+- **Effect on results:** none.
+
+## 2026-10-03: CLAUDE.md paid-model rule and spend caps
+- **What the spec said:** CLAUDE.md hard rule "Never call a paid model. The configs use free models only (`spend_cap_eur: 0`)."; SPEC 10 dev config had `spend_cap_eur: 0`, `usd_to_eur: null`.
+- **What we did instead:** the rule is now "Only call paid models in a run whose config has spend_cap_eur above 0, set by Saad. Never raise a spend cap yourself." `configs/dev.yaml` has `spend_cap_eur: 5` and `usd_to_eur: 4.44` (both set by Saad). `configs/full.yaml` and `configs/local.yaml` got the same models but keep `spend_cap_eur: 0`, so they refuse to start until Saad sets a cap (tested). `PRE_REGISTRATION.md` (still DRAFT) had its bracketed model proposal updated to the OpenRouter models; no hypothesis or threshold was touched. `docs/CLOUD.md` names the new key and domain.
+- **Why:** Groq's paid tier is unavailable, so the free-only rule could not stay. Decided by Saad.
+- **Effect on results:** euro figures are the provider's USD cost times 4.44. That factor is Saad's choice and is far above a market rate (roughly 0.85 to 0.95 EUR per USD in 2026), so reported euros are about five times the market conversion, and the 5 EUR cap stops a run at about 1.13 USD of real spend. Raw USD can be recovered as `cost_eur / 4.44`.
+
+## 2026-10-03: Groq-specific limits removed
+- **What the spec said:** dev config `rpm_limit: 30`, `rpd_limit: 1000`, plus our `tpm_limit: 8000` and `tpd_limit: 200000` (entries of 2026-10-02 below).
+- **What we did instead:** the OpenRouter models set only `rpm_limit: 60` as our own ceiling; no `rpd_limit`, `tpm_limit` or `tpd_limit`. `concurrency` stays 2. The generic quota and retry code is unchanged and still tested: token bucket, token window, daily counters, per-day 429 handling, the parse-failure retry and `max_tokens: 32768`.
+- **Why:** `GET /api/v1/key` reports no request rate limit for this paid key (`rate_limit.requests: -1`) and OpenRouter has no daily limit for paid models. Upstream 429s are retried with backoff.
+- **Effect on results:** none on outcomes; runs are no longer throttled to Groq's quotas.
+
+## 2026-10-03: cost from the provider's reported cost; cached tokens recorded
+- **What the spec said:** cost via `litellm.completion_cost` converted with `usd_to_eur`, or `price_usd_per_mtok` for models LiteLLM cannot price (SPEC 5.3, 10).
+- **What we did instead:** `agent/llm.py` uses the cost the response reports (`usage.cost`, OpenRouter, in USD, cache discounts included) first, then `price_usd_per_mtok`, then `litellm.completion_cost`. `price_usd_per_mtok` is set to CoreWeave's output price (0.13 for 20b, 0.17 for 120b), an upper bound used only if a response lacks a cost. Cached input tokens (`usage.prompt_tokens_details.cached_tokens`) are recorded per response and as a new `tokens_cached_in` field in EpisodeResult. SPEC 4 and 5.3 updated.
+- **Why:** LiteLLM's price table holds the cheapest OpenRouter provider's price, not the pinned provider's. The reported cost is what is actually billed.
+- **Effect on results:** cost figures match OpenRouter's billing.
+
+## 2026-10-03: one pinned OpenRouter provider, recorded per result
+- **What the spec said:** nothing about upstream providers (SPEC 5.3, 10).
+- **What we did instead:** a new optional model field `provider`. When set, every request carries OpenRouter provider routing `{order: [<provider>], allow_fallbacks: false}`. Both models and the redteam model use `coreweave/fp4`. The provider that actually served each reply (`response.provider`) goes into every `llm_response` trace event and into a new `provider` field of EpisodeResult (several would be joined with "+", which would show the pin failed). The pin is part of the config, so it is in `runs/<id>/config.yaml` and the config hash. SPEC 4, 5.3 and 10 updated.
+- **Why:** reproducibility. OpenRouter otherwise load-balances between providers with different engines and weight formats. CoreWeave serves both models in fp4 (the released format), passed tool calling on 120b every time, had no upstream 429s under parallel load, and reports cached tokens (`docs/notes/openrouter.md`). Decided by Saad (pin one provider, no fallbacks); provider chosen by Claude after testing.
+- **Effect on results:** all episodes run on one stack. If CoreWeave is down, requests fail with 404 or 5xx instead of moving elsewhere, so episodes may end as `llm_error`.
+
+## 2026-10-03: model API switched from Groq to OpenRouter
+- **What the spec said:** two free gpt-oss models on Groq, key `PFS_GROQ_API_KEY`, `free_tier: true` (SPEC 5.3, 10); redteam model `groq/llama-3.3-70b-versatile`.
+- **What we did instead:** `openrouter/openai/gpt-oss-20b` and `openrouter/openai/gpt-oss-120b`, key `PFS_OPENROUTER_API_KEY`, `free_tier: false`, in dev, full and local configs. Redteam model `openrouter/openai/gpt-oss-120b`. `openrouter.ai` is in the allowed domains.
+- **Why:** Groq's free tier allowed about 200k tokens per model per day, which made the M1 baseline a multi-day job, and Groq's paid tier is unavailable. Decided by Saad.
+- **Effect on results:** same model weights, different provider and serving stack, so numbers are not comparable with the Groq pilot. The redteam model changes from Llama 3.3 70B to gpt-oss-120b, which is also one of the models under test (relevant from M2: paraphrases are written by one of the tested models).
+
 ## 2026-10-02: canary vault only in attack conditions, plus a vault_control condition
 - **What the spec said:** SPEC 5.1 planted the canary (`vault/` as a second filesystem root, `vault.api_keys` in Postgres) in every condition so leak rates are comparable.
 - **What we did instead:** the vault is planted only in poison, inject and rugpull, and in a new control condition `vault_control` (1 attempt per task, vault present, empty plan). Baseline, paraphrase, fault and pushback start the server exactly as MCPMark does, with `workspace/` only. SPEC 4, 5.1, 6.8 and 8 updated.
