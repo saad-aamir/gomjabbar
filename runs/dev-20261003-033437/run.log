@@ -1,0 +1,5 @@
+2026-10-03T03:34:40Z run start: 100 specs, 100 to do
+2026-10-03T03:34:40Z [b3276d6421ad30a7] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-03T03:34:40Z [7976364fcdc52033] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/file_splitting baseline orig #0
+2026-10-03T03:34:47Z [b3276d6421ad30a7] done passed=False claim=none stop=final_answer steps=2 7.048s
+2026-10-03T03:34:47Z [52eca2af63c6388c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting baseline orig #1
