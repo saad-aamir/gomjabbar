@@ -39,9 +39,23 @@ class ModelEstimate:
 
 
 def estimate(
-    config: RunConfig, specs: list[EpisodeSpec], pilot: list[EpisodeResult]
+    config: RunConfig,
+    specs: list[EpisodeSpec],
+    pilot: list[EpisodeResult],
+    pilot_usd_to_eur: float | None = None,
 ) -> list[ModelEstimate]:
+    """Project the planned specs from the pilot's per-episode averages.
+
+    `pilot_usd_to_eur` is the rate the pilot run used. The pilot's euro costs are converted
+    back to dollars with it and then to euros with the planned config's rate, so a change of
+    `usd_to_eur` between pilot and run does not distort the estimate.
+    """
     planned = Counter(spec.model for spec in specs)
+    # Factor from the pilot's euros to the planned run's euros (1 if either rate is unknown).
+    if pilot_usd_to_eur and config.usd_to_eur:
+        eur_factor = config.usd_to_eur / pilot_usd_to_eur
+    else:
+        eur_factor = 1.0
     estimates = []
     for model in config.models:
         rows = [r for r in pilot if r.spec.model == model.name]
@@ -55,7 +69,7 @@ def estimate(
         req = sum(r.llm_requests for r in rows) / n
         tok = sum(r.tokens_in + r.tokens_out for r in rows) / n
         sec = sum(r.duration_s for r in rows) / n
-        cost = sum(r.cost_eur for r in rows) / n
+        cost = sum(r.cost_eur for r in rows) / n * eur_factor
         episodes = planned[model.name]
         total_requests = math.ceil(req * episodes)
         total_tokens = math.ceil(tok * episodes)

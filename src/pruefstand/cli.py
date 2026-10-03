@@ -174,9 +174,12 @@ def estimate(
     """Project episodes, requests, tokens, euros and days for a planned run from a pilot."""
     cfg = load_config(config)
     specs = build_specs(cfg, "estimate", _task_ids(cfg), only)
-    pilot_results = RunStore(pilot).read_results()
+    pilot_store = RunStore(pilot)
+    pilot_results = pilot_store.read_results()
+    # The pilot's own euro rate, so its costs can be converted to the planned run's rate.
+    pilot_rate = load_config(pilot_store.config_path).usd_to_eur
     typer.echo(f"planned: {len(specs)} episodes ({only.value if only else 'all conditions'})")
-    estimates = estimate_run(cfg, specs, pilot_results)
+    estimates = estimate_run(cfg, specs, pilot_results, pilot_rate)
     for e in estimates:
         typer.echo(f"== {e.model}")
         source = (
