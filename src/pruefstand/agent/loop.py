@@ -73,9 +73,9 @@ class ServerLaunch:
 class LoopLimits:
     """Budget for one episode (SPEC 5.3, from the run config)."""
 
-    max_steps: int = 40  # model calls
+    max_steps: int = 100  # model calls (MCPMark's MAX_TURNS)
     tool_timeout_s: float = 30
-    episode_timeout_s: float = 900
+    episode_timeout_s: float = 3600  # agent seconds (MCPMark's --timeout default)
 
 
 class Trace:

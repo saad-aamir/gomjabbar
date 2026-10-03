@@ -78,9 +78,11 @@ class RunConfig(BaseModel):
     fault_profiles: list[FaultProfile] = Field(default_factory=list)
     conditions: list[Condition]
     defenses: list[str] = Field(default_factory=list)
-    max_steps: int = 40
+    # MCPMark's defaults: MAX_TURNS = 100 model calls (src/agents/mcpmark_agent.py:47) and
+    # --timeout 3600 s per task (pipeline.py). Matched since 2026-10-03 (DEVIATIONS.md).
+    max_steps: int = 100
     tool_timeout_s: float = 30
-    episode_timeout_s: float = 900
+    episode_timeout_s: float = 3600
     concurrency: int = 1
     spend_cap_eur: float = 0
     usd_to_eur: float | None = None

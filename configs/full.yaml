@@ -31,9 +31,9 @@ paraphrases: 3                           # paraphrase variants per task
 fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
 conditions: [baseline, paraphrase, fault, poison, inject, vault_control, pushback]
 defenses: []                             # e.g. [pinning, sanitizer]
-max_steps: 40
+max_steps: 100                           # model calls per episode, as MCPMark's MAX_TURNS
 tool_timeout_s: 30
-episode_timeout_s: 900
+episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's --timeout default
 concurrency: 2
 spend_cap_eur: 0                         # 0 = free models only: this config refuses to start until Saad sets a cap
 usd_to_eur: null                         # set by Saad together with spend_cap_eur
