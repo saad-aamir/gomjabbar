@@ -50,3 +50,13 @@
 2026-10-03T04:18:52Z [a4f0a20381128aca] done passed=False claim=none stop=final_answer steps=10 29.477s
 2026-10-03T04:18:52Z [ccd04b8aa6dd5428] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #2
 2026-10-03T04:19:07Z [ccd04b8aa6dd5428] done passed=True claim=done stop=final_answer steps=21 14.665s
+2026-10-03T04:19:09Z checkpoint pushed: run(dev-20261003-033437): checkpoint 25/100
+2026-10-03T04:19:09Z [4f5c2b1d661573b3] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #3
+2026-10-03T04:19:14Z [3dda7ad53ec13119] done passed=False claim=none stop=max_steps steps=100 1358.129s
+2026-10-03T04:19:14Z [c0d4d352166745ce] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #3
+2026-10-03T04:19:18Z [c0d4d352166745ce] done passed=False claim=none stop=final_answer steps=6 4.449s
+2026-10-03T04:19:18Z [6aad90e09dbf1b60] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #4
+2026-10-03T04:19:38Z manual: run killed with SIGKILL by Claude after 27 results (M1 acceptance check: kill halfway and resume); in flight: 4f5c2b1d661573b3 6aad90e09dbf1b60
+2026-10-03T04:19:58Z run start: 100 specs, 73 to do
+2026-10-03T04:19:58Z [4f5c2b1d661573b3] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #3
+2026-10-03T04:19:58Z [6aad90e09dbf1b60] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #4
