@@ -1,0 +1,56 @@
+run_name: dev
+suite: suites/dev.txt
+services:
+- filesystem
+- postgres
+models:
+- name: openrouter/openai/gpt-oss-20b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  rpm_limit: 60
+  rpd_limit: null
+  tpm_limit: null
+  tpd_limit: null
+  price_usd_per_mtok: 0.13
+- name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  rpm_limit: 60
+  rpd_limit: null
+  tpm_limit: null
+  tpd_limit: null
+  price_usd_per_mtok: 0.17
+redteam_model:
+  name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  rpm_limit: 60
+  rpd_limit: null
+  tpm_limit: null
+  tpd_limit: null
+  price_usd_per_mtok: 0.17
+temperature: null
+max_tokens: 32768
+seed: 20261002
+k: 1
+paraphrases: 3
+fault_profiles:
+- timeout
+- rpc_error
+- tool_error
+- malformed
+- empty
+- rate_limit
+conditions:
+- baseline
+defenses: []
+max_steps: 40
+tool_timeout_s: 30.0
+episode_timeout_s: 900.0
+concurrency: 2
+spend_cap_eur: 5.0
+usd_to_eur: 4.44
+keep_sandboxes: false
