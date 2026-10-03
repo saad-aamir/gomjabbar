@@ -1,0 +1,62 @@
+{
+  "task_id": "postgres/easy/sports/create_performance_indexes",
+  "source_sha1": "9749563a4bef3f6159f8fa919f3957801237dbbc",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:53:52Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-2",
+      "text": "### Goal  \nAdd two indexes so that queries filtering by participants and fetching statistics run noticeably faster in the sports database.\n\n### Instructions  \n\n1. **participants_events index** – Build an index on the `participant_id` column of the `participants_events` table.  \n2. **stats composite index** – Build a composite index on the `stats` table using the columns `stat_holder_type` and `stat_holder_id` in that exact sequence.\n\n### Specifications  \n\n- Provide an index for `participants_events(participant_id)`.  \n- Provide a composite index for `stats(stat_holder_type, stat_holder_id)`.  \n- You may name the indexes arbitrarily (e.g., `idx_participants_events_participant_id`, `idx_stats_holder`).  \n- Apply the normal `CREATE INDEX` command syntax.\n\n### Expected Result  \nWith these indexes in place, participant‑based filtering and statistics look‑ups will execute with considerably improved performance.",
+      "tries": 1,
+      "differences": [
+        "The wording, headings, and formatting of the two descriptions differ, but both require the same two indexes (participants_events(participant_id) and stats(stat_holder_type, stat_holder_id) in that order) with freely chosen names using standard CREATE INDEX syntax."
+      ]
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Add two indexes to speed up participant and statistics queries in the sports database.\n\n- Create an index on `participants_events(participant_id)`\n- Create a composite index on `stats(stat_holder_type, stat_holder_id)`\n\nUse any names you like (e.g., idx_participants_events_participant_id, idx_stats_holder) and the regular CREATE INDEX syntax.",
+      "tries": 2,
+      "differences": []
+    }
+  ],
+  "rejected": [
+    {
+      "variant_id": "para-1",
+      "try": 1,
+      "check": "literal",
+      "reason": "missing literals: 'e.g'"
+    },
+    {
+      "variant_id": "para-1",
+      "try": 2,
+      "check": "literal",
+      "reason": "missing literals: 'e.g'"
+    },
+    {
+      "variant_id": "para-1",
+      "try": 3,
+      "check": "literal",
+      "reason": "missing literals: 'e.g'"
+    },
+    {
+      "variant_id": "para-3",
+      "try": 1,
+      "check": "literal",
+      "reason": "missing literals: 'e.g'"
+    }
+  ],
+  "dropped": [
+    {
+      "variant_id": "para-1",
+      "reasons": [
+        "missing literals: 'e.g'",
+        "missing literals: 'e.g'",
+        "missing literals: 'e.g'"
+      ]
+    }
+  ],
+  "cost_eur": 0.000742,
+  "requests": 8
+}

@@ -1,0 +1,32 @@
+{
+  "task_id": "postgres/easy/employees/department_summary_view",
+  "source_sha1": "19d98a3d30dbe7db85859c82e4473b87db19987f",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:52:10Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Produce a materialized view named `exec_department_summary` inside the `employees` schema that aggregates essential department‑level data for use in leadership dashboards. The view should expose the following columns exactly as listed:\n\n* `department_name` (varchar) – the name of the department  \n* `total_employees` (integer) – count of currently active employees (those whose salary record has `to_date = '9999-01-01'`)  \n* `avg_salary` (decimal) – average salary of those active employees  \n* `total_payroll` (bigint) – sum of the current monthly salaries for the department  \n* `manager_name` (varchar) – full name of the present department manager, created by concatenating `first_name` and `last_name`\n\nThe implementation must satisfy these conditions:\n\n1. The object must be a materialized view so that its result set is cached for faster access.  \n2. Join the tables `departments`, `dept_emp`, `employees`, `salaries`, and `dept_manager` to obtain the required information.  \n3. Restrict the employee rows to those that are presently active, meaning their `to_date` equals `'9999-01-01'` in both `dept_emp` and `salaries`.  \n4. Restrict the manager rows to the current manager, where `to_date = '9999-01-01'` in `dept_manager`.  \n5. Order the final rows by `department_name`.\n\nOnce the view has been defined, execute a refresh operation so that the materialized view is populated with the latest data. This view will give executives an up‑to‑date snapshot of workforce counts and payroll expenses by department.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Objective  \nSupply leadership dashboards with a compact, up‑to‑date snapshot of departmental workforce statistics via a materialized view.\n\n## What to construct  \n- A materialized view named **`exec_department_summary`** inside the **`employees`** schema.  \n- The view must expose the following columns, with the exact names and data types:  \n\n  * `department_name` (varchar) – name of the department  \n  * `total_employees` (integer) – count of currently active employees (active salary where `to_date` = '9999-01-01')  \n  * `avg_salary` (decimal) – average current salary of those active employees  \n  * `total_payroll` (bigint) – sum of all current salaries in the department (monthly payroll)  \n  * `manager_name` (varchar) – full name of the present department manager (concatenation of `first_name` and `last_name`)  \n\n## Constraints & requirements  \n- Implement the object as a **materialized view** so the result set is cached for performance.  \n- Join **exactly** the tables listed below:  \n\n  1. `departments` – provides department data  \n  2. `dept_emp` – links employees to departments  \n  3. `employees` – stores employee details  \n  4. `salaries` – holds salary records  \n  5. `dept_manager` – contains manager assignments  \n\n- Filter rows so that only **current** employees are considered: both `dept_emp` and `salaries` must have `to_date` = '9999-01-01'.  \n- Filter rows so that only **current** managers are considered: `dept_manager` must have `to_date` = '9999-01-01'.  \n- Return the result set ordered by `department_name`.  \n\n## Post‑creation step  \nAfter the view is defined, **refresh the materialized view** to load it with the latest data.\n\n## Note on the date literal  \nThe condition uses the constant **'9999-01-01'** (year **9999**, month **01**) as the sentinel indicating an active record.\n\nThis view will give executives a real‑time overview of department staff counts, average compensation, total payroll, and current manager identity.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Set up a materialized view `exec_department_summary` in the `employees` schema that pulls together the key department metrics for the leadership dashboards.\n\n**View definition** – columns:\n\n- `department_name` (varchar) – name of the department  \n- `total_employees` (integer) – count of active employees (active salary rows where `to_date` = '9999-01-01')  \n- `avg_salary` (decimal) – average current salary for those active employees  \n- `total_payroll` (bigint) – sum of all current salaries in the department (monthly)  \n- `manager_name` (varchar) – current manager’s full name (`first_name` || `last_name`)\n\n**What to do**\n\n1. Use a materialized view for caching.  \n2. Join these tables: `departments`, `dept_emp`, `employees`, `salaries`, `dept_manager`.  \n3. Restrict to rows where `to_date` = '9999-01-01' in both `dept_emp` and `salaries`.  \n4. Restrict to managers with `to_date` = '9999-01-01' in `dept_manager`.  \n5. Order the result set by `department_name`.\n\nAfter creating the view, run a refresh so it contains the latest data. This will give executives a real‑time snapshot of workforce counts and payroll costs per department.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000757,
+  "requests": 8
+}

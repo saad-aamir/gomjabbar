@@ -1,0 +1,35 @@
+{
+  "task_id": "postgres/easy/chinook/update_employee_info",
+  "source_sha1": "45069de055f5f76e93652b60d56235d8828151ff",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:51:14Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "The objective is to adjust employee records and alter the reporting hierarchy inside the Chinook database so that it matches the latest organizational changes.  \n\nFirst, modify the existing employee data as follows: change the title of Andrew Adams (EmployeeId = 1) from “General Manager” to “CEO”; revise Nancy Edwards’s (EmployeeId = 2) phone number to “+1 (403) 555-9999”; and replace the title “IT Staff” with “IT Specialist” for every employee currently holding that title.  \n\nThe work must satisfy these conditions:  \nUse UPDATE statements to modify the existing records.  \nThe title update for ‘IT Staff’ should affect all matching employees.  \n\nWhen the updates are finished, the outcomes should be: Andrew Adams has Title = “CEO”; Nancy Edwards has Phone = “+1 (403) 555-9999”; and every employee who previously had Title = “IT Staff” now shows Title = “IT Specialist”.  \n\nThis exercise is intended to practice UPDATE operations for both employee information and organizational hierarchy management.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Objectives\n- Adjust employee records in the Chinook database so the reporting hierarchy mirrors recent organizational shifts.\n\n## Actions Required\n\n### **MODIFY: Existing Employee Records**\n- For the employee where `EmployeeId = 1` (Andrew Adams), replace the title **'General Manager'** with **'CEO'**.  \n- For the employee where `EmployeeId = 2` (Nancy Edwards), set the phone field to **'+1 (403) 555-9999'**.  \n- For every row whose `Title` currently equals **'IT Staff'**, change the `Title` to **'IT Specialist'**.\n\n## Conditions\n- Only `UPDATE` statements may be used to alter the data.  \n- The change for `Title = 'IT Staff'` must be applied to all rows that meet the criterion.\n\n## Verification\nWhen the updates have been executed:\n- Andrew Adams must display `Title = 'CEO'`.  \n- Nancy Edwards must display `Phone = '+1 (403) 555-9999'`.  \n- No employee should retain `Title = 'IT Staff'`; all such rows must now show `Title = 'IT Specialist'`.\n\nThe purpose of this exercise is to practice `UPDATE` commands for employee data and hierarchy adjustments.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Update employee data and the reporting hierarchy in the Chinook database.\n\n**Tasks**\n\n- EmployeeId = 1 (Andrew Adams): change Title from **'General Manager'** to **'CEO'**.  \n- EmployeeId = 2 (Nancy Edwards): set Phone to **'+1 (403) 555-9999'**.  \n- For every row where Title = **'IT Staff'**, update Title to **'IT Specialist'**.\n\n**Requirements**\n\n- Use SQL UPDATE statements.  \n- The Title change for **'IT Staff'** must affect all matching records.\n\n**Result**\n\n- Andrew Adams → Title = **'CEO'**.  \n- Nancy Edwards → Phone = **'+1 (403) 555-9999'**.  \n- All former **'IT Staff'** now have Title = **'IT Specialist'**.",
+      "tries": 1,
+      "differences": [
+        "A presents the tasks with markdown headings (##, ###) and a '## Requirements' section, while B uses plain bold text and a condensed layout.",
+        "The wording and formatting of the instructions differ (e.g., 'Change all employees with Title = …' vs. 'For every row where Title = …'), but the required updates, values, and use of UPDATE statements are identical."
+      ]
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000546,
+  "requests": 7
+}

@@ -1,0 +1,35 @@
+{
+  "task_id": "filesystem/easy/file_property/txt_merging",
+  "source_sha1": "e5dc95b755210760b87882df24eba4da3d714328",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:48:43Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Your goal is to combine every file ending with .txt that resides in the test directory into a single file named merge.txt placed in the same directory. The resulting merge.txt must contain the contents of all .txt files, and the sequence of the pieces is irrelevant as long as everything appears.\n\nTo accomplish this, you must: 1. Read all .txt files in the test directory. 2. Create a new file called merge.txt in the test directory. 3. Write the content from all .txt files into merge.txt. 4. Ensure that the order of content does not matter, provided all content from all .txt files is present in merge.txt.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# File Consolidation Challenge\n\n## 🗂️ Overview\n\nAll files ending with `.txt` that reside in the test directory must be combined into a single file named `merge.txt`. The resulting `merge.txt` needs to contain the complete contents of each `.txt` file.\n\n## 🎯 Goals\n\n1. **Create a new file** called `merge.txt` within the test directory  \n2. **Read every `.txt` file** present in the test directory  \n3. **Write the gathered content** into `merge.txt`  \n4. **Order is irrelevant** – the only requirement is that `merge.txt` includes the full content from all `.txt` files",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "# Merge .txt Files  \n\n- Find **all** `.txt` files in the test directory.  \n- Create a file named `merge.txt` in that same directory.  \n- Append the full contents of each `.txt` file to `merge.txt`.  \n- The order of the appended material is irrelevant; every `.txt` file’s content must be present.",
+      "tries": 1,
+      "differences": [
+        "Task A says \"Write the content\" whereas Task B says \"Append the full contents\"; both describe the same final result.",
+        "A mentions creating a \"new file\" while B says \"Create a file\"; both imply the file should exist after the operation."
+      ]
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000505,
+  "requests": 6
+}

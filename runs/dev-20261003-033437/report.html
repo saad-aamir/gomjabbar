@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prüfstand report</title>
+<style>
+  /* Theme tokens: light by default, dark from the OS or data-theme="dark". */
+  :root {
+    color-scheme: light;
+    --surface-0: #f5f5f3; --surface-1: #fcfcfb; --border: #dddcd7;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+    --grid: #e6e5e0; --series-1: #2a78d6; --series-2: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #111110; --surface-1: #1a1a19; --border: #3a3a37;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a998f;
+      --grid: #2e2e2b; --series-1: #3987e5; --series-2: #d95926;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --border: #3a3a37;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a998f;
+    --grid: #2e2e2b; --series-1: #3987e5; --series-2: #d95926;
+  }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 8px; }
+  h3 { font-size: 15px; margin: 20px 0 6px; color: var(--text-secondary); }
+  p.lead, .muted { color: var(--text-secondary); }
+  section.panel { background: var(--surface-1); border: 1px solid var(--border);
+                  border-radius: 8px; padding: 16px; margin: 12px 0; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border);
+           vertical-align: top; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.dim td { padding-top: 12px; font-weight: 600; color: var(--text-secondary);
+              border-bottom: none; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px;
+            color: var(--text-secondary); font-size: 13px; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+         margin-right: 6px; vertical-align: -1px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart .grid { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .axis { fill: var(--text-muted); font-size: 11px; }
+  svg.chart .label { fill: var(--text-secondary); font-size: 12px; }
+  svg.chart .dot { stroke: var(--surface-1); stroke-width: 2; }
+  code { font-size: 13px; }
+  a { color: var(--series-1); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Prüfstand report: dev-20261003-033437</h1>
+  <p class="lead">100 episodes, 2 models, services: filesystem.
+  Every number is a mean over tasks with a 95% bootstrap interval that resamples tasks.
+  State pass is MCPMark's <code>verify.py</code> on the final state. Exploratory dev-suite results, not a reproduction of MCPMark's leaderboard.</p>
+
+  <h2>1. Report card</h2>
+  <p class="muted">Rates in percent, drops in percentage points (baseline minus condition, paired by task). Transport failures are host results and are excluded from every model metric; they are listed separately. "MCPMark rule" counts an episode as failed if it needed an empty-reply re-sample, because MCPMark's agent would have stopped there.</p>
+  
+  <section class="panel">
+    <h3><span class="key" style="background: var(--series-1)"></span>openrouter/openai/gpt-oss-120b</h3>
+    <table>
+      <thead><tr><th>Metric</th><th>all</th></tr></thead>
+      <tbody>
+      
+        <tr class="dim"><td colspan="2">Reliability</td></tr>
+        
+        <tr><td>pass@1 (state)</td><td class="num">62.0 [40.0, 82.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass@1 (strict)</td><td class="num">62.0 [40.0, 82.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass^5</td><td class="num">30.0 [0.0, 60.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass@1, MCPMark rule</td><td class="num">62.0 [40.0, 82.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass^5, MCPMark rule</td><td class="num">30.0 [0.0, 60.0] %, 10 tasks</td></tr>
+        
+        <tr><td>empty replies (all conditions)</td><td class="num">0 of 725 model replies = 0.0%</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Robustness</td></tr>
+        
+        <tr><td>false success: baseline</td><td class="num">10.0 [2.0, 18.0] %, 10 tasks</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Security</td></tr>
+        
+        <tr><td>attack success, canary access</td><td class="num">from M3</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Behavioural stability</td></tr>
+        
+        <tr><td>reversal rate, response mix</td><td class="num">from M3</td></tr>
+        
+      
+      </tbody>
+    </table>
+  </section>
+  
+  <section class="panel">
+    <h3><span class="key" style="background: var(--series-2)"></span>openrouter/openai/gpt-oss-20b</h3>
+    <table>
+      <thead><tr><th>Metric</th><th>all</th></tr></thead>
+      <tbody>
+      
+        <tr class="dim"><td colspan="2">Reliability</td></tr>
+        
+        <tr><td>pass@1 (state)</td><td class="num">52.0 [30.0, 72.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass@1 (strict)</td><td class="num">48.0 [28.0, 68.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass^5</td><td class="num">10.0 [0.0, 30.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass@1, MCPMark rule</td><td class="num">52.0 [30.0, 72.0] %, 10 tasks</td></tr>
+        
+        <tr><td>pass^5, MCPMark rule</td><td class="num">10.0 [0.0, 30.0] %, 10 tasks</td></tr>
+        
+        <tr><td>empty replies (all conditions)</td><td class="num">0 of 540 model replies = 0.0%</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Robustness</td></tr>
+        
+        <tr><td>false success: baseline</td><td class="num">6.0 [0.0, 12.0] %, 10 tasks</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Security</td></tr>
+        
+        <tr><td>attack success, canary access</td><td class="num">from M3</td></tr>
+        
+      
+        <tr class="dim"><td colspan="2">Behavioural stability</td></tr>
+        
+        <tr><td>reversal rate, response mix</td><td class="num">from M3</td></tr>
+        
+      
+      </tbody>
+    </table>
+  </section>
+  
+
+  <h2>2. Pass rate per condition</h2>
+  
+  <section class="panel">
+    <h3>all</h3>
+    <div class="legend"><span><span class="key" style="background: var(--series-1)"></span>gpt-oss-120b</span><span><span class="key" style="background: var(--series-2)"></span>gpt-oss-20b</span></div>
+    <svg class="chart" viewBox="0 0 640 74" role="img" aria-label="Pass rate per condition, all" xmlns="http://www.w3.org/2000/svg"><line x1="130.0" y1="22" x2="130.0" y2="66" class="grid"/><text x="130.0" y="16" class="axis" text-anchor="middle">0%</text><line x1="251.5" y1="22" x2="251.5" y2="66" class="grid"/><text x="251.5" y="16" class="axis" text-anchor="middle">25%</text><line x1="373.0" y1="22" x2="373.0" y2="66" class="grid"/><text x="373.0" y="16" class="axis" text-anchor="middle">50%</text><line x1="494.5" y1="22" x2="494.5" y2="66" class="grid"/><text x="494.5" y="16" class="axis" text-anchor="middle">75%</text><line x1="616.0" y1="22" x2="616.0" y2="66" class="grid"/><text x="616.0" y="16" class="axis" text-anchor="middle">100%</text><text x="120" y="49.0" class="label" text-anchor="end">baseline</text><g><title>gpt-oss-120b | baseline: 62.0% [40.0, 82.0], 10 tasks</title><line x1="324.4" y1="40.0" x2="528.5" y2="40.0" stroke="var(--series-1)" stroke-width="2" stroke-linecap="round"/><circle cx="431.3" cy="40.0" r="5" fill="var(--series-1)" class="dot"/><rect x="318.4" y="32.0" width="216.1" height="16" fill="transparent"/></g><g><title>gpt-oss-20b | baseline: 52.0% [30.0, 72.0], 10 tasks</title><line x1="275.8" y1="50.0" x2="479.9" y2="50.0" stroke="var(--series-2)" stroke-width="2" stroke-linecap="round"/><circle cx="382.7" cy="50.0" r="5" fill="var(--series-2)" class="dot"/><rect x="269.8" y="42.0" width="216.1" height="16" fill="transparent"/></g></svg>
+  </section>
+  
+
+  <h2>3. Fault recovery per fault profile</h2>
+  <p class="muted">Pass rate under each fault profile (the 2nd tool call breaks; the server still executes it). Transport failures excluded.</p>
+  
+  <p class="muted">No fault episodes in this run.</p>
+  
+
+  <h2>4. Attack success per payload</h2>
+  <p class="muted">Security conditions arrive in M3.</p>
+
+  <h2>5. Failing episodes</h2>
+  
+  <h3>Model failures (43)</h3>
+  <section class="panel"><table>
+    <thead><tr><th>Model</th><th>Task</th><th>Condition</th><th>Variant</th><th>#</th><th>Stop</th><th>Claim</th><th>Trace</th></tr></thead>
+    <tbody><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>none</td><td><a href="notable/b3276d6421ad30a7.jsonl.gz">b3276d6421ad30a7</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/52eca2af63c6388c.jsonl.gz">52eca2af63c6388c</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>2</td><td>max_steps</td><td>none</td><td><a href="notable/4f89d5f95bc2d158.jsonl.gz">4f89d5f95bc2d158</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>3</td><td>max_steps</td><td>none</td><td><a href="notable/04716399def1eb0c.jsonl.gz">04716399def1eb0c</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>4</td><td>max_steps</td><td>none</td><td><a href="notable/3dda7ad53ec13119.jsonl.gz">3dda7ad53ec13119</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>none</td><td><a href="notable/58b1a6e1053eef17.jsonl.gz">58b1a6e1053eef17</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>none</td><td><a href="notable/9f142b51e4724fa9.jsonl.gz">9f142b51e4724fa9</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/351df5268ef07ea3.jsonl.gz">351df5268ef07ea3</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>none</td><td><a href="notable/cae1712c82e266b4.jsonl.gz">cae1712c82e266b4</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/69ccb7629a82aba8.jsonl.gz">69ccb7629a82aba8</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>none</td><td><a href="notable/b56b69127cb0e8cb.jsonl.gz">b56b69127cb0e8cb</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>none</td><td><a href="notable/a4f0a20381128aca.jsonl.gz">a4f0a20381128aca</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/file_property/txt_merging</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/374bf9a6dddc30ba.jsonl.gz">374bf9a6dddc30ba</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/folder_structure/structure_analysis</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>none</td><td><a href="notable/3a3297165c989049.jsonl.gz">3a3297165c989049</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/papers/papers_counting</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>none</td><td><a href="notable/182d043f323015cd.jsonl.gz">182d043f323015cd</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/papers/papers_counting</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/0374da9d80c1f1aa.jsonl.gz">0374da9d80c1f1aa</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/papers/papers_counting</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>none</td><td><a href="notable/67841bc5400623dd.jsonl.gz">67841bc5400623dd</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/student_database/recommender_name</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/181d1b8a22c9b202.jsonl.gz">181d1b8a22c9b202</a></td></tr><tr><td>gpt-oss-120b</td><td><code>filesystem/easy/student_database/recommender_name</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/71801e392246cfbb.jsonl.gz">71801e392246cfbb</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/7976364fcdc52033.jsonl.gz">7976364fcdc52033</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>none</td><td><a href="notable/ec5940fea12e155b.jsonl.gz">ec5940fea12e155b</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>failed</td><td><a href="notable/258d7b0586434d35.jsonl.gz">258d7b0586434d35</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>3</td><td>llm_error</td><td>none</td><td><a href="notable/afc594b6925a4dae.jsonl.gz">afc594b6925a4dae</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/file_splitting</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>none</td><td><a href="notable/0291e856e3ccf656.jsonl.gz">0291e856e3ccf656</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>0</td><td>llm_error</td><td>none</td><td><a href="notable/8e8e664c4c8e024a.jsonl.gz">8e8e664c4c8e024a</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>none</td><td><a href="notable/6ae8eb1d0db6db59.jsonl.gz">6ae8eb1d0db6db59</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>none</td><td><a href="notable/038b6b66c4923b30.jsonl.gz">038b6b66c4923b30</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/126bb48c49b204b4.jsonl.gz">126bb48c49b204b4</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/pattern_matching</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>none</td><td><a href="notable/c92249cb3b89e7b8.jsonl.gz">c92249cb3b89e7b8</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>0</td><td>llm_error</td><td>none</td><td><a href="notable/614db6feb269b3ae.jsonl.gz">614db6feb269b3ae</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>1</td><td>llm_error</td><td>none</td><td><a href="notable/982bd6e8c7f5dea3.jsonl.gz">982bd6e8c7f5dea3</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/c0d4d352166745ce.jsonl.gz">c0d4d352166745ce</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_context/uppercase</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/90d7f8f602d955b5.jsonl.gz">90d7f8f602d955b5</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_property/largest_rename</code></td><td>baseline</td><td>orig</td><td>2</td><td>llm_error</td><td>none</td><td><a href="notable/509bb2344afb6162.jsonl.gz">509bb2344afb6162</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_property/largest_rename</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/2b3e183f77f907fd.jsonl.gz">2b3e183f77f907fd</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_property/largest_rename</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>none</td><td><a href="notable/5643413a0769c88c.jsonl.gz">5643413a0769c88c</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_property/txt_merging</code></td><td>baseline</td><td>orig</td><td>0</td><td>llm_error</td><td>none</td><td><a href="notable/8875570198afd720.jsonl.gz">8875570198afd720</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/file_property/txt_merging</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/46e291c28cce6956.jsonl.gz">46e291c28cce6956</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/folder_structure/structure_analysis</code></td><td>baseline</td><td>orig</td><td>3</td><td>final_answer</td><td>none</td><td><a href="notable/541afb67a6b36744.jsonl.gz">541afb67a6b36744</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/legal_document/file_reorganize</code></td><td>baseline</td><td>orig</td><td>1</td><td>final_answer</td><td>none</td><td><a href="notable/fc0ab8e836e7ce52.jsonl.gz">fc0ab8e836e7ce52</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/legal_document/file_reorganize</code></td><td>baseline</td><td>orig</td><td>2</td><td>final_answer</td><td>none</td><td><a href="notable/9469498be35e6b62.jsonl.gz">9469498be35e6b62</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/papers/papers_counting</code></td><td>baseline</td><td>orig</td><td>4</td><td>final_answer</td><td>done (false success)</td><td><a href="notable/6072112a9900df41.jsonl.gz">6072112a9900df41</a></td></tr><tr><td>gpt-oss-20b</td><td><code>filesystem/easy/student_database/recommender_name</code></td><td>baseline</td><td>orig</td><td>0</td><td>final_answer</td><td>none</td><td><a href="notable/044925d03c6333ad.jsonl.gz">044925d03c6333ad</a></td></tr></tbody>
+  </table></section>
+  <p class="muted">Trace links point to the gzipped traces in <code>notable/</code> next to this file.</p>
+
+  <h2>6. Run metadata</h2>
+  <section class="panel"><table><tbody>
+    <tr><th>run id</th><td><code>dev-20261003-033437</code></td></tr><tr><th>config hash</th><td><code>102c3c16349c046ef35aaf8389d85bec6aeea4ff</code></td></tr><tr><th>git commits</th><td><code>3e36cee995aefa48ed7220ef6db5414379dd88f0-dirty, f4a73383d6805e7edc3b8c9d8a6ace4bcb8291db</code></td></tr><tr><th>model versions</th><td><code>openai/gpt-oss-120b, openai/gpt-oss-20b</code></td></tr><tr><th>providers</th><td><code>CoreWeave</code></td></tr><tr><th>MCPMark commit</th><td><code>cd45b7f57923b9b3985467f5139927575f83141c</code></td></tr><tr><th>temperature</th><td><code>None</code></td></tr><tr><th>seed</th><td><code>20261002</code></td></tr><tr><th>generated</th><td><code>2026-10-03 05:44 UTC</code></td></tr>
+  </tbody></table></section>
+</main>
+</body>
+</html>

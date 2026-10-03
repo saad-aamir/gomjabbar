@@ -1,0 +1,74 @@
+{
+  "task_id": "postgres/easy/lego/fix_data_inconsistencies",
+  "source_sha1": "ae34fae3d7b4cbb510ba753063be8691fc8d4f82",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:55:55Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-3",
+      "text": "Fix the LEGO DB inconsistency where `lego_sets.num_parts = SUM(quantity)` from the latest inventory of non‑spare parts.\n\n**Rule** – for each `set_num`, the stored `num_parts` must equal the sum of `quantity` in `lego_inventory_parts` (where `is_spare` = false) belonging to the inventory with the highest `MAX(version)` in `lego_inventories`. Skip sets with no inventory rows.\n\n### 1. Detect mismatches  \nWrite a single `SELECT` that:\n\n1. obtains the latest `inventory_id` per `set_num` (use `MAX(version)` on `lego_inventories`);\n2. joins `lego_inventory_parts` on `inventory_id` and computes `SUM(quantity)` for rows with `is_spare` = false;\n3. joins that result to `lego_sets` and returns rows where `lego_sets.num_parts` differs from the computed sum.\n\n### 2. Repair data (temp‑table workflow)\n\n1. **Create temp table** – `correct_counts(set_num text, actual_parts integer)`.\n2. **Populate** – an `INSERT` that starts with `SELECT` from `public.lego_sets`, `LEFT JOIN` a sub‑query that finds the latest inventory and does the non‑spare `SUM(quantity)`. Apply `COALESCE(..., 0)` so missing data yields `0` instead of `NULL`.\n3. **Apply** – an `UPDATE` joining `lego_sets` to `correct_counts` on `set_num`, setting `num_parts = actual_parts`.\n\nResult: every row in `lego_sets` shows the correct `num_parts`.  \n\n(steps 1, 2, 3 – e.g. to follow.)",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [
+    {
+      "variant_id": "para-1",
+      "try": 1,
+      "check": "equivalence",
+      "reason": "not equivalent: A only suggests the temporary table name (e.g., `correct_counts`) and allows other names, while B mandates the temporary table be named exactly `correct_counts`.; B adds an optional note about testing the process with sample identifiers (e.g., 1, 2, 3), which is not present in A."
+    },
+    {
+      "variant_id": "para-1",
+      "try": 2,
+      "check": "equivalence",
+      "reason": "not equivalent: A only suggests the temporary table be named `correct_counts` (using \"e.g.\") while B explicitly requires the temporary table to be named `correct_counts`.; Because of this, a solution that follows A but uses a different temporary table name would be valid for A but would violate B's naming requirement."
+    },
+    {
+      "variant_id": "para-1",
+      "try": 3,
+      "check": "literal",
+      "reason": "missing literals: 'e.g'"
+    },
+    {
+      "variant_id": "para-2",
+      "try": 1,
+      "check": "equivalence",
+      "reason": "not equivalent: Task B explicitly requires the INSERT to start from `public.lego_sets`, to use a LEFT JOIN and to apply `COALESCE(...,0)`. Task A only says the query must start from `public.lego_sets` and use COALESCE, but it does not enforce that a solution must include those exact clauses; a correct A‑solution could omit COALESCE or use a different source expression and still be considered correct.; Task B lists a set of “key elements” that must appear in the code (e.g., `MAX(version)`, `is_spare`, `SUM(quant"
+    },
+    {
+      "variant_id": "para-2",
+      "try": 2,
+      "check": "equivalence",
+      "reason": "not equivalent: Task A allows the temporary table to be named arbitrarily (e.g., `correct_counts`), while Task B explicitly requires the table to be named `correct_counts`.; The wording of the task identifiers differs (Task 1/Task 2 in A vs. Task A/Task B in B), but this does not affect functional requirements.; Both descriptions otherwise specify identical queries, joins, use of `public.lego_sets`, `COALESCE` to 0, and the final update logic."
+    },
+    {
+      "variant_id": "para-2",
+      "try": 3,
+      "check": "literal",
+      "reason": "missing literals: 'e.g', '3'"
+    }
+  ],
+  "dropped": [
+    {
+      "variant_id": "para-1",
+      "reasons": [
+        "not equivalent: A only suggests the temporary table name (e.g., `correct_counts`) and allows other names, while B mandates the temporary table be named exactly `correct_counts`.; B adds an optional note about testing the process with sample identifiers (e.g., 1, 2, 3), which is not present in A.",
+        "not equivalent: A only suggests the temporary table be named `correct_counts` (using \"e.g.\") while B explicitly requires the temporary table to be named `correct_counts`.; Because of this, a solution that follows A but uses a different temporary table name would be valid for A but would violate B's naming requirement.",
+        "missing literals: 'e.g'"
+      ]
+    },
+    {
+      "variant_id": "para-2",
+      "reasons": [
+        "not equivalent: Task B explicitly requires the INSERT to start from `public.lego_sets`, to use a LEFT JOIN and to apply `COALESCE(...,0)`. Task A only says the query must start from `public.lego_sets` and use COALESCE, but it does not enforce that a solution must include those exact clauses; a correct A‑solution could omit COALESCE or use a different source expression and still be considered correct.; Task B lists a set of “key elements” that must appear in the code (e.g., `MAX(version)`, `is_spare`, `SUM(quant",
+        "not equivalent: Task A allows the temporary table to be named arbitrarily (e.g., `correct_counts`), while Task B explicitly requires the table to be named `correct_counts`.; The wording of the task identifiers differs (Task 1/Task 2 in A vs. Task A/Task B in B), but this does not affect functional requirements.; Both descriptions otherwise specify identical queries, joins, use of `public.lego_sets`, `COALESCE` to 0, and the final update logic.",
+        "missing literals: 'e.g', '3'"
+      ]
+    }
+  ],
+  "cost_eur": 0.002164,
+  "requests": 12
+}

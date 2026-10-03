@@ -1,0 +1,22 @@
+2026-10-03T05:47:50Z run start: 10 specs, 10 to do
+2026-10-03T05:47:51Z [402a3d1c9ffc0c03] start openrouter/openai/gpt-oss-120b postgres/easy/chinook/customer_data_migration_basic baseline orig #0
+2026-10-03T05:47:51Z [b3e155633db9adcb] start openrouter/openai/gpt-oss-20b postgres/easy/chinook/customer_data_migration_basic baseline orig #0
+2026-10-03T05:48:16Z [402a3d1c9ffc0c03] done passed=True claim=done stop=final_answer steps=6 25.526s
+2026-10-03T05:48:17Z [2a7e67cca9993c96] start openrouter/openai/gpt-oss-120b postgres/easy/chinook/update_employee_info baseline orig #0
+2026-10-03T05:48:41Z [2a7e67cca9993c96] done passed=True claim=done stop=final_answer steps=9 24.635s
+2026-10-03T05:48:42Z [c38b0969c7c1f600] start openrouter/openai/gpt-oss-20b postgres/easy/chinook/update_employee_info baseline orig #0
+2026-10-03T05:49:24Z [c38b0969c7c1f600] done passed=True claim=done stop=final_answer steps=20 42.486s
+2026-10-03T05:49:25Z [9b6ecda4f30f1d21] start openrouter/openai/gpt-oss-120b postgres/easy/dvdrental/create_payment_index baseline orig #0
+2026-10-03T05:49:34Z [9b6ecda4f30f1d21] done passed=True claim=done stop=final_answer steps=4 9.039s
+2026-10-03T05:49:34Z [aebe6309f258a22f] start openrouter/openai/gpt-oss-20b postgres/easy/dvdrental/create_payment_index baseline orig #0
+2026-10-03T05:49:38Z [aebe6309f258a22f] done passed=True claim=done stop=final_answer steps=4 3.946s
+2026-10-03T05:49:39Z [1f828f54940d9097] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view baseline orig #0
+2026-10-03T05:50:20Z [b3e155633db9adcb] done passed=True claim=done stop=final_answer steps=51 148.261s
+2026-10-03T05:50:20Z [50a6b33628471383] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view baseline orig #0
+2026-10-03T05:50:31Z [1f828f54940d9097] done passed=True claim=done stop=final_answer steps=12 51.645s
+2026-10-03T05:50:31Z [60e0573715e25af8] start openrouter/openai/gpt-oss-120b postgres/easy/employees/employee_gender_statistics baseline orig #0
+2026-10-03T05:50:45Z [50a6b33628471383] done passed=False claim=none stop=llm_error steps=10 24.788s
+2026-10-03T05:50:46Z [803c0daffadb5cf9] start openrouter/openai/gpt-oss-20b postgres/easy/employees/employee_gender_statistics baseline orig #0
+2026-10-03T05:51:10Z [60e0573715e25af8] done passed=True claim=done stop=final_answer steps=8 37.845s
+2026-10-03T05:51:15Z [803c0daffadb5cf9] done passed=True claim=done stop=final_answer steps=15 28.624s
+2026-10-03T05:51:15Z run stop: 10/10 done, paused=[]

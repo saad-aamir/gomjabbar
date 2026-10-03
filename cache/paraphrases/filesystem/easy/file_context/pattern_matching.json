@@ -1,0 +1,35 @@
+{
+  "task_id": "filesystem/easy/file_context/pattern_matching",
+  "source_sha1": "6f55926b9172343522ba5f3afad88008ebf858a9",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:09Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Your assignment is to locate every file between file_01.txt and file_20.txt that contains a substring of at least 30 characters which also occurs somewhere in large_file.txt. The use of Python code is strictly forbidden.\n\nFirst, open the reference file large_file.txt and become familiar with its contents. Then, one by one, open each candidate file ranging from file_01.txt through file_20.txt (the base identifiers are file_01 and file_20) and scan for any sequence of 30 or more consecutive characters that can be found in large_file.txt. If such a sequence exists in a given file, that file is considered a match.\n\nAll matching file names must be written to a new file named answer.txt. The output file should contain exactly one line for each match, and each line must consist solely of the filename in the form `filename.txt`. Do not add any things else other than `filename.txt.`.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# Substring Search Challenge: Detect Overlapping Segments\n\n## 📌 Overview  \n\nLocate every file between **file_01.txt** and **file_20.txt** that holds a fragment of **30** or more consecutive characters also present in **large_file.txt**. **The use of python code is prohibited.**  \n\n## ✅ Required Actions  \n\n- **Inspect the reference** – open **large_file.txt** (also referred to as **large_file**) to learn its text.  \n- **Traverse the target set** – go through each file from **file_01.txt** through **file_20.txt** (the base names **file_01** and **file_20** may be useful when forming loops).  \n- **Identify qualifying substrings** – for each candidate file, check whether it contains any substring whose length is **30** or greater that also occurs somewhere inside **large_file.txt**.  \n- **Record findings** – generate a new file named **answer.txt** and list every matching file name.  \n\n## 🗂 Output Format  \n\n- **answer.txt** must consist of one line per discovered file.  \n- Each line should contain only the literal filename, e.g., `filename.txt`.  \n- No extra symbols or text are allowed; the line must end exactly with `filename.txt.` (including the final period).",
+      "tries": 1,
+      "differences": [
+        "A’s wording is slightly ambiguous about the trailing period (it mentions `filename.txt` and later `filename.txt.`), whereas B explicitly requires the period at the end of each line.",
+        "B adds a note that the base names `file_01` and `file_20` may be useful for forming loops; A does not mention this suggestion."
+      ]
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Find every file between **file_01.txt** and **file_20.txt** that shares a substring of **30** or more characters with **large_file.txt** (no Python allowed). List each matching name on its own line in **answer.txt** using the exact format `filename.txt` (and terminate the line with the period as shown: `filename.txt.`). Read **large_file.txt** first, then check each **file_01.txt … file_20.txt** (i.e., **file_01** through **file_20**) for the required substring.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000704,
+  "requests": 6
+}

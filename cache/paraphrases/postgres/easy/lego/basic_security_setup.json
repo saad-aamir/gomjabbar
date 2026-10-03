@@ -1,0 +1,42 @@
+{
+  "task_id": "postgres/easy/lego/basic_security_setup",
+  "source_sha1": "02e4c1627705b5d9c06e2240b9138fb9a29e742e",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:53:46Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Configure fundamental database protection for the LEGO database by employing role‑based access control together with Row‑Level Security (RLS).\n\nStep 1 – Create a database role and assign permissions. Introduce a new role named `theme_analyst`. Grant this role `SELECT` rights on every reference table (`lego_themes`, `lego_colors`, `lego_parts`, `lego_part_categories`) as well as on the primary data tables (`lego_sets`, `lego_inventories`, `lego_inventory_parts`). Ensure that the role receives no `INSERT`, `UPDATE`, or `DELETE` privileges on any table.\n\nStep 2 – Activate Row‑Level Security. Turn on RLS for the three main tables: `lego_sets`, `lego_inventories`, and `lego_inventory_parts`.\n\nThe implementation must:\n\n- employ `CREATE ROLE` to define the `theme_analyst` role;\n- use `GRANT SELECT` statements to provide the read‑only access described above;\n- apply `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` to each of the three tables listed for RLS.\n\nWhen these actions are finished, the `theme_analyst` role should be present and limited to read‑only operations on the designated tables, while RLS will be enabled (though policies have not yet been added) on the three core data tables. No write capabilities (`INSERT`, `UPDATE`, `DELETE`) should be granted to the role, establishing the base for future theme‑specific data isolation policies.",
+      "tries": 2,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Overview  \nConfigure role‑based access control and activate Row‑Level Security (RLS) for the LEGO database.\n\n## Actions Required  \n\n### 1. Establish Role and Grants  \n- Create a new database role named `theme_analyst` using `CREATE ROLE`.  \n- Grant `SELECT` rights on all reference tables: `lego_themes`, `lego_colors`, `lego_parts`, `lego_part_categories`.  \n- Grant `SELECT` rights on the primary data tables: `lego_sets`, `lego_inventories`, `lego_inventory_parts`.  \n- Ensure the role has **no** `INSERT`, `UPDATE`, or `DELETE` privileges on any table.\n\n### 2. Activate Row‑Level Security  \n- Apply `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` to each of the following tables: `lego_sets`, `lego_inventories`, `lego_inventory_parts`.\n\n## Mandatory Commands  \n- Use `CREATE ROLE` to define the `theme_analyst` role.  \n- Apply `GRANT SELECT` statements for the tables listed above.  \n- Execute `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on the three data tables.\n\n## Expected Result  \nWhen the steps are finished:  \n- The `theme_analyst` role exists and can only read the specified tables.  \n- RLS is turned on (without any policies yet) for `lego_sets`, `lego_inventories`, and `lego_inventory_parts`.  \n- No `INSERT`, `UPDATE`, or `DELETE` permissions are granted to the role on any table.  \n\nThese configurations lay the groundwork for future theme‑based data isolation policies.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Set up basic DB security for the LEGO database using role‑based access and RLS.\n\n### 1. Create Database Role and Permissions\n- `CREATE ROLE` `theme_analyst`\n- `GRANT SELECT` on reference tables: `lego_themes`, `lego_colors`, `lego_parts`, `lego_part_categories`\n- `GRANT SELECT` on main tables: `lego_sets`, `lego_inventories`, `lego_inventory_parts`\n- No `INSERT`, `UPDATE`, or `DELETE` on any table\n\n### 2. Enable Row‑Level Security\n- `ALTER TABLE` `lego_sets` `... ENABLE ROW LEVEL SECURITY`\n- `ALTER TABLE` `lego_inventories` `... ENABLE ROW LEVEL SECURITY`\n- `ALTER TABLE` `lego_inventory_parts` `... ENABLE ROW LEVEL SECURITY`\n\n**Requirements**\n- Use `CREATE ROLE`, `GRANT SELECT`, and `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` exactly as listed.\n\n**Expected Outcome**\n- The `theme_analyst` role exists with read‑only access to the specified tables.\n- RLS is enabled (policies not yet defined) on `lego_sets`, `lego_inventories`, `lego_inventory_parts`.\n- No write permissions (`INSERT`, `UPDATE`, `DELETE`) are granted on any table.",
+      "tries": 1,
+      "differences": [
+        "Task B uses slightly different wording and includes ellipsis placeholders (\"...\") in the ALTER TABLE examples, but the required actions and outcomes are the same as in Task A.",
+        "Both descriptions list the same role name, tables, and permissions; the only variation is stylistic presentation, not functional requirements."
+      ]
+    }
+  ],
+  "rejected": [
+    {
+      "variant_id": "para-1",
+      "try": 1,
+      "check": "literal",
+      "reason": "missing literals: '1', '2'"
+    }
+  ],
+  "dropped": [],
+  "cost_eur": 0.000861,
+  "requests": 7
+}

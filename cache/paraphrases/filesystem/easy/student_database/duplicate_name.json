@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/student_database/duplicate_name",
+  "source_sha1": "d87829f8a6c3411fa33b7b876a81bd75ad750783",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:50:26Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Find a repeated student name within the complete list of 150 pupils. Do not use Python code for this task. You are required to locate **any one** duplicate name. After you have identified it, produce a file named `namesake.txt` that contains the result in exactly three lines, following the format shown below. Remember to substitute underscores with spaces when writing the name.\n\nname: xxx\ncount: xxx\nids: xxx, xxx, ...",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "### Objective\n- Find a duplicate name within the full list of **150** students. You only need to locate **any one** duplicate.\n\n### Constraints\n- No Python code may be used.\n- The duplicate name can be any that appears more than once.\n\n### Output\n- Generate a file named `namesake.txt`.\n- The file must contain exactly three lines, formatted as follows:\n\n```\nname: xxx\ncount: xxx\nids: xxx, xxx, ...\n```\n\n- **Note:** when recording the name, replace underscores with spaces.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Identify any one duplicate name from the list of all the 150 students (do not use python code). Create a `namesake.txt` file containing exactly three lines, replacing underscores with spaces:\n\nname: xxx  \ncount: xxx  \nids: xxx, xxx, ...",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000525,
+  "requests": 6
+}

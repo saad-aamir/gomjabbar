@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/file_property/largest_rename",
+  "source_sha1": "b176f5705cb25186c79998830a77f07d992d4ba2",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:48:34Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "Rename the biggest `.jpg` file in the test directory to `largest.jpg` according to its file size.\n\n1. Find all `.jpg` files in the test directory.  \n2. Determine which `.jpg` file is the largest by file size.  \n3. Rename the largest `.jpg` file to `largest.jpg`.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "# Largest File Rename Task\n\n## 📂 Overview\n\nThe assignment is to locate the biggest `.jpg` file inside the test directory and rename it to `largest.jpg`.\n\n## 🎯 Goals\n\n- Scan the test directory for all files with the `.jpg` extension.  \n- Evaluate their sizes to decide which one is the largest.  \n- Rename that file to `largest.jpg`.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "# Largest File Rename Task\n\nRename the biggest `.jpg` in the test directory to `largest.jpg`.\n\nSteps:\n1. List all `.jpg` files in the test directory.  \n2. Identify the `.jpg` with the greatest file size.  \n3. Rename that file to `largest.jpg`.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000398,
+  "requests": 6
+}

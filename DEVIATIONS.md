@@ -10,6 +10,18 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: how paraphrases are generated and checked
+- **What the spec said:** SPEC 5.6: P paraphrases per task with the redteam model, cached, each passing a literal check (paths, file names, numbers, quoted strings, table and column names) and an LLM equivalence check, max 3 tries, then drop and log.
+- **What we did instead (choices where the spec is open):** only `description.md` is reworded; MCPMark's fixed suffix is appended unchanged to every paraphrase. The literal check also covers Markdown code spans, snake_case and CamelCase identifiers (column and table names) and every Markdown table cell, and ignores Markdown list numbering on both sides (so "3." in a list neither counts as nor satisfies the number 3). Each variant gets a different style hint (prose, reordered list, short message) so the three differ from each other. The generation prompt (version v2) lists the literals the check will demand; v1 did not, and gpt-oss kept writing small numbers as words ("five"), which dropped every variant of `uppercase`. The equivalence check asks one question covering both directions. Generation is its own command, `pruefstand paraphrase`, guarded by the key spend limit; a run refuses to start paraphrase episodes without a valid cache (missing, or made from a different description). A variant that was dropped has no episode. The cache files record generator, prompt version, every rejection with the failed check, every drop and the cost. `docs/notes/paraphrase-samples.md` shows 5 for review.
+- **Why:** simplest reading of SPEC 5.6 that makes the paraphrases demand the same end state and lets every model see identical text. Claude's choices.
+- **Effect on results:** paraphrase episodes per task can be fewer than 3 where variants were dropped; the report counts tasks, not variants, so this changes only the precision of the estimate.
+
+## 2026-10-03: the empty fault profile keeps structuredContent
+- **What the spec said:** `empty`: forward the result with `content: []` (SPEC 5.2).
+- **What we did instead:** only `content` is emptied; other result fields such as `structuredContent` are forwarded unchanged.
+- **Why:** the MCP SDK validates `structuredContent` against a tool's output schema; removing it would turn `empty` into a schema error on the client, a different fault. The agent loop shows the model only the content blocks, so the model sees an empty result.
+- **Effect on results:** none beyond the profile's intent.
+
 ## 2026-10-03: postgres-mcp started with uvx and a pinned MCP SDK
 - **What the spec said:** reuse MCPMark's server launch command, `pipx run postgres-mcp==0.3.0 --access-mode=unrestricted` with `DATABASE_URI` (SPEC 2.1, `docs/notes/mcpmark-interface.md`).
 - **What we did instead:** `uvx --with mcp==1.30.0 postgres-mcp==0.3.0 --access-mode=unrestricted`, same `DATABASE_URI`.

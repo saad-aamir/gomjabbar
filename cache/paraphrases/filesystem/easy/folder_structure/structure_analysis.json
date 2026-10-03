@@ -1,0 +1,32 @@
+{
+  "task_id": "filesystem/easy/folder_structure/structure_analysis",
+  "source_sha1": "593c9f2591e53d76932eb24a001047095d21ed6e",
+  "generator": "openrouter/openai/gpt-oss-120b",
+  "prompt_version": "v2",
+  "created": "2026-10-03T05:49:46Z",
+  "requested": 3,
+  "variants": [
+    {
+      "variant_id": "para-1",
+      "text": "You must recursively walk through the entire folder hierarchy that resides under the main directory and determine how many `.py` files exist in the whole tree, including every subdirectory.  \n\nThe final result, which should be a single numeric value, has to be placed in a file named `structure_analysis.txt` that resides in the main directory, at the same level as the `complex_structure` folder.  \n\nDo not modify or delete any files that are already present.  \n\nAvoid using any Python code to perform the required operations.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-2",
+      "text": "## Objective\n- Recursively walk through every folder and sub‑folder located under the top‑level directory and determine how many files end with `.py` (including all nested directories).\n\n## Output\n- Write a single integer – the total count – into a file called `structure_analysis.txt` placed in the main directory, at the same level as the `complex_structure` folder.\n\n## Restrictions\n- Do not modify, remove, or add to any existing files.\n- Avoid using Python code to perform the task.\n\n## Note\n- The procedure described above constitutes the `structure_analysis`.",
+      "tries": 1,
+      "differences": []
+    },
+    {
+      "variant_id": "para-3",
+      "text": "Recursively walk the entire directory tree under the main folder and count every `.py` file (including those in subfolders). Write that single number to `structure_analysis.txt` placed in the main folder, at the same level as the `complex_structure` directory. Do not alter or delete any existing files. No Python code may be used.",
+      "tries": 1,
+      "differences": []
+    }
+  ],
+  "rejected": [],
+  "dropped": [],
+  "cost_eur": 0.000603,
+  "requests": 6
+}

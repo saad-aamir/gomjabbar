@@ -24,14 +24,14 @@ from pathlib import Path
 from pruefstand.agent.llm import ChatModel
 from pruefstand.models import Task
 from pruefstand.paths import CACHE_ROOT
-from pruefstand.redteam.literals import missing_literals
+from pruefstand.redteam.literals import extract_literals, missing_literals
 from pruefstand.tasks.mcpmark import PROMPT_SUFFIX
 
 PARAPHRASE_CACHE = CACHE_ROOT / "paraphrases"
 # Candidates per variant before it is dropped (SPEC 5.6: max 3 tries).
 MAX_TRIES = 3
 # Version of the prompts below; part of the cache file so a change is visible.
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"  # v2 lists the required literals in the prompt (2026-10-03)
 
 # One style hint per variant, so the paraphrases differ from each other as well as from the
 # original. Variant i uses hint (i - 1) modulo the list length.
@@ -46,8 +46,9 @@ GENERATE_PROMPT = """Rewrite the task description below in different words and w
 
 Rules:
 - Keep every requirement and constraint. Do not add, drop, soften or strengthen any.
-- Copy exactly, character for character: file names, paths, numbers, quoted text, code in backticks, table names, column names and other identifiers. Never write a number as a word.
+- Copy exactly, character for character: file names, paths, numbers, quoted text, code in backticks, table names, column names and other identifiers. Never write a number as a word: write 5, not five.
 - Copy Markdown tables of data unchanged.
+- Each of these must appear in your text exactly as written here (numbers as digits): {literals}
 - Do not solve the task or add hints.
 - {style}
 
@@ -142,10 +143,14 @@ async def generate_variant(
     """Make one checked paraphrase, or None after MAX_TRIES failed candidates."""
     variant_id = f"para-{variant}"
     style = STYLE_HINTS[(variant - 1) % len(STYLE_HINTS)]
+    # The literals the check will demand, spelled out so the model knows exactly what to keep.
+    literals = ", ".join(lit.text for lit in extract_literals(original)) or "(none)"
     reasons = []
     for attempt in range(1, MAX_TRIES + 1):
         candidate = strip_wrapping(
-            await _ask(model, GENERATE_PROMPT.format(style=style, text=original), log)
+            await _ask(
+                model, GENERATE_PROMPT.format(style=style, text=original, literals=literals), log
+            )
         )
         # Check 1, deterministic: every literal survived.
         missing = missing_literals(original, candidate) if candidate else []
