@@ -43,6 +43,17 @@ No other host is needed for the filesystem and postgres services. (The Notion, G
 - The workspace path is **not** in the prompt. Descriptions say "the test directory"; the agent finds the path by calling the server's `list_allowed_directories` tool.
 - MCPMark's own system prompt (`src/agents/mcpmark_agent.py:48`) is not reused; Prüfstand uses `SYSTEM_PROMPT_V1` (SPEC 5.3).
 
+## Agent limits in MCPMark's own runner (checked 2026-10-03)
+
+Prüfstand does not reuse MCPMark's agent, but it matches its limits so results are comparable in budget:
+
+- Default agent: `--agent mcpmark` (`pipeline.py:69`), class `MCPMarkAgent`.
+- `MAX_TURNS = 100` (`src/agents/mcpmark_agent.py:47`). A turn is one model reply: `turn_count` goes up once per assistant message with tool calls (`:971`) and once for the final message (`:1044`). Failed model calls do not count. This is the same unit as Prüfstand's `steps`, so `max_steps` is 100.
+- Timeout per task: `--timeout`, default 3600 s (`pipeline.py:99`), applied with `asyncio.wait_for` around the whole agent run (`mcpmark_agent.py:133`); each model call gets half of it (`:873`). Prüfstand's `episode_timeout_s` is 3600 (agent time, quota waits excluded).
+- `max_consecutive_failures = 3` (`:802`): three failed model calls in a row end the run. Prüfstand's own cap is per call: at most 3 parse-failure retries.
+- `temperature: 1.0` and `max_tokens: 32768` on every call (`:852`, `:853`). Prüfstand sends `max_tokens: 32768` and leaves temperature at the provider default (`temperature: null`), which differs from MCPMark when a provider's default is not 1.0.
+- `ReActAgent` (`--agent react`, not the default) uses `max_iterations = 100`.
+
 ## Filesystem service
 
 ### Server launch command

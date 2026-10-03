@@ -10,7 +10,7 @@ Numbers in [brackets] are proposals to review, not decisions.
 
 - Tasks: MCPMark filesystem and postgres, `standard` suite, commit recorded in `docs/notes/mcpmark-interface.md`.
 - Models: [openrouter/openai/gpt-oss-20b, openrouter/openai/gpt-oss-120b], paid, both pinned to one OpenRouter upstream provider (`coreweave/fp4`, see `docs/notes/openrouter.md`), spend cap set by Saad.
-- Agent: `SYSTEM_PROMPT_V1`, max 40 steps, provider-default temperature.
+- Agent: `SYSTEM_PROMPT_V1`, max 100 steps (MCPMark's default), provider-default temperature.
 - Seed: 20261002.
 
 ## Pass definition
