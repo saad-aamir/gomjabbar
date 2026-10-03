@@ -213,3 +213,10 @@
 2026-10-03T06:29:13Z [66d148ef7df72974] start openrouter/openai/gpt-oss-20b postgres/easy/chinook/customer_data_migration_basic baseline orig #1
 2026-10-03T06:29:21Z [66d148ef7df72974] done passed=True claim=done stop=final_answer steps=6 8.212s
 2026-10-03T06:29:22Z [8ceacb01e7d68e9f] start openrouter/openai/gpt-oss-120b postgres/easy/chinook/customer_data_migration_basic baseline orig #2
+2026-10-03T06:29:28Z [415c412a767b10c4] done passed=True claim=done stop=final_answer steps=5 16.679s
+2026-10-03T06:29:28Z [997605a4815d2807] start openrouter/openai/gpt-oss-20b postgres/easy/chinook/customer_data_migration_basic baseline orig #2
+2026-10-03T06:29:35Z [8ceacb01e7d68e9f] done passed=True claim=done stop=final_answer steps=5 12.767s
+2026-10-03T06:29:35Z [55dcfe2fe76b678d] start openrouter/openai/gpt-oss-120b postgres/easy/chinook/customer_data_migration_basic baseline orig #3
+2026-10-03T06:29:36Z [997605a4815d2807] done passed=True claim=done stop=final_answer steps=5 7.56s
+2026-10-03T06:29:36Z [984cd316e57c419a] start openrouter/openai/gpt-oss-20b postgres/easy/chinook/customer_data_migration_basic baseline orig #3
+2026-10-03T06:29:54Z [55dcfe2fe76b678d] done passed=True claim=done stop=final_answer steps=6 18.437s
