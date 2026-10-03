@@ -151,8 +151,13 @@ class EpisodeResult(BaseModel):
     llm_requests: int = 0  # HTTP requests to the model, retries included (for `estimate`)
     tokens_in: int
     tokens_out: int
+    tokens_cached_in: int = 0  # part of tokens_in served from the provider's prompt cache
     cost_eur: float
     duration_s: float
     model_version: str  # as returned by the provider
+    # Upstream provider that served the episode (OpenRouter's response field), e.g. "CoreWeave".
+    # Several are joined with "+", which would mean the provider pin did not hold. "" if the
+    # API does not say (Groq, Ollama, the scripted test model).
+    provider: str = ""
     config_hash: str  # sha1 of the resolved RunConfig
     git_commit: str

@@ -1,14 +1,17 @@
 """Model client: one chat completion with tools, through LiteLLM, with retries and accounting.
 
 What: `LiteLLMChat.complete` sends the conversation and tool list to the model and returns an
-`LLMReply` with the text, tool calls, token counts, cost and the provider's model version.
+`LLMReply` with the text, tool calls, token counts (cached input included), cost, the
+provider's model version and the upstream provider that served it.
 Why: every model call in the bench goes through here (SPEC 5.3), so retries, quota throttling,
 the explicit API key and cost accounting live in one place. The agent loop only sees the
 `ChatModel` protocol, which tests satisfy with a scripted stand-in.
 How: before each HTTP attempt the client asks the quota gate (runner/quota.py) for permission;
 LiteLLM's own retries are switched off so every real request is counted exactly once.
-Transient errors are retried with backoff; a daily-quota 429 raises QuotaExhausted; anything
-else raises LLMError, which ends the episode with stop_reason "llm_error".
+For OpenRouter models the request pins one upstream provider with fallbacks off.
+Transient errors are retried with backoff; a daily-quota 429 or exhausted credits raise
+QuotaExhausted; anything else raises LLMError, which ends the episode with stop_reason
+"llm_error".
 """
 
 from __future__ import annotations
@@ -58,8 +61,10 @@ class LLMReply:
     message: dict  # the assistant message in OpenAI format, appended to the history
     tokens_in: int = 0
     tokens_out: int = 0
+    tokens_cached: int = 0  # part of tokens_in served from the provider's prompt cache
     cost_eur: float = 0.0
     model_version: str = ""
+    provider: str = ""  # upstream provider that served the reply (OpenRouter), "" if unknown
     latency_ms: float = 0.0
     attempts: int = 1  # HTTP requests this completion used (retries included)
     throttle_s: float = 0.0  # time spent waiting on our quota gate and 429 backoffs
@@ -85,13 +90,19 @@ class RequestGate(Protocol):
 
 # ---- error classification ------------------------------------------------------------------
 
-# Groq names the limit in the message, e.g. "on requests per day (RPD)" or "tokens per day (TPD)".
+# Daily limits are named in the message, e.g. Groq's "on requests per day (RPD)" or
+# "tokens per day (TPD)". Kept generic: any provider that says "per day" is handled the same.
 _DAILY_RE = re.compile(r"per day|\(RPD\)|\(TPD\)", re.IGNORECASE)
-# Groq suggests a wait, e.g. "Please try again in 7.66s", "in 1m2.5s" or "in 2h3m4s".
+# Some providers suggest a wait, e.g. "Please try again in 7.66s", "in 1m2.5s" or "in 2h3m4s".
 _RETRY_IN_RE = re.compile(r"try again in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s", re.IGNORECASE)
 # A per-day 429 that says to retry within this many seconds is waited out, not treated as the
-# end of the day: Groq's daily token limit is a rolling window that can free up in minutes.
+# end of the day: a rolling daily window (seen on Groq) can free up in minutes.
 DAILY_WAIT_MAX_S = 900.0
+# The account has no credit left (OpenRouter answers 402, or 403 once a key's own spending
+# limit is reached). Retrying cannot help, and the episode is not the model's fault.
+_CREDITS_RE = re.compile(
+    r"insufficient credits|requires more credits|key limit exceeded|credit limit", re.IGNORECASE
+)
 
 
 def retry_hint_seconds(text: str) -> float | None:
@@ -119,6 +130,11 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
     # Exponential backoff for the generic case: 2, 4, 8, ... seconds, capped.
     backoff = min(2.0**attempt, MAX_BACKOFF_S)
 
+    if status == 402 or _CREDITS_RE.search(text):
+        # Out of credits: stop this model like an exhausted daily quota, so the run pauses
+        # cleanly and no episode is scored as an llm_error.
+        return ErrorVerdict("quota_day", reason="out of credits: " + text[:500])
+
     if status == 429 or "rate limit" in text.lower():
         hint = retry_hint_seconds(text)
         if _DAILY_RE.search(text):
@@ -141,8 +157,8 @@ def classify_error(exc: Exception, attempt: int) -> ErrorVerdict:
         or "output_parse_failed" in text
         or "failed to call a function" in text.lower()
     ):
-        # The provider could not parse the model's output (Groq: tool_use_failed or
-        # output_parse_failed, seen in the M1 pilot). Sampling again usually works, so this
+        # The provider could not parse the model's output (for example Groq's tool_use_failed
+        # or output_parse_failed, seen in the first M1 pilot). Sampling again usually works, so this
         # is retried like a transient error (it still counts against the quota).
         return ErrorVerdict("retry", 1.0, text[:300])
 
@@ -205,6 +221,12 @@ class LiteLLMChat:
             kwargs["temperature"] = self.temperature
         if self.max_tokens is not None:
             kwargs["max_tokens"] = self.max_tokens
+        if self.model.provider is not None:
+            # OpenRouter provider routing: only the pinned endpoint, never a fallback. If it is
+            # down, OpenRouter answers 404 or 5xx and our retry logic decides what happens.
+            kwargs["extra_body"] = {
+                "provider": {"order": [self.model.provider], "allow_fallbacks": False}
+            }
         estimated = estimate_tokens(messages, tools)
         # Time spent waiting for quota, not for the model. The agent loop excludes it from
         # the episode timeout, so a slow free tier never shows up as a model timeout.
@@ -267,6 +289,9 @@ class LiteLLMChat:
         usage = getattr(response, "usage", None)
         tokens_in = getattr(usage, "prompt_tokens", 0) or 0
         tokens_out = getattr(usage, "completion_tokens", 0) or 0
+        # Cached input tokens, when the provider reports them (OpenAI usage format).
+        details = getattr(usage, "prompt_tokens_details", None)
+        tokens_cached = getattr(details, "cached_tokens", 0) or 0
         # Model version: the provider's model name plus its fingerprint when it sends one.
         version = response.model or self.model.name
         fingerprint = getattr(response, "system_fingerprint", None)
@@ -279,8 +304,11 @@ class LiteLLMChat:
             message=message,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
+            tokens_cached=tokens_cached,
             cost_eur=self._cost_eur(response, tokens_in, tokens_out),
             model_version=version,
+            # OpenRouter names the upstream provider that served the request.
+            provider=getattr(response, "provider", None) or "",
             latency_ms=latency_ms,
             finish_reason=first.finish_reason or "",
             extra={"reasoning": reasoning} if reasoning else {},
@@ -290,7 +318,12 @@ class LiteLLMChat:
         """Cost of one response in euros. Free-tier models cost nothing by definition."""
         if self.model.free_tier:
             return 0.0
-        if self.model.price_usd_per_mtok is not None:
+        # First choice: the cost the provider itself reports for this response. OpenRouter
+        # puts it in usage.cost, in US dollars, cache discounts included.
+        reported = getattr(getattr(response, "usage", None), "cost", None)
+        if isinstance(reported, int | float) and not isinstance(reported, bool):
+            usd = float(reported)
+        elif self.model.price_usd_per_mtok is not None:
             usd = (tokens_in + tokens_out) * self.model.price_usd_per_mtok / 1_000_000
         else:
             import litellm

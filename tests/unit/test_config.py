@@ -57,3 +57,11 @@ def test_key_env_must_be_prefixed():
         RunConfig.model_validate(
             minimal(models=[{"name": "x", "api_key_env": "ANTHROPIC_API_KEY", "free_tier": True}])
         )
+
+
+def test_provider_pin_only_for_openrouter():
+    from pruefstand.config import ModelConfig
+
+    ModelConfig(name="openrouter/openai/gpt-oss-20b", provider="coreweave/fp4")
+    with pytest.raises(ValueError, match="openrouter"):
+        ModelConfig(name="groq/openai/gpt-oss-20b", provider="coreweave/fp4")

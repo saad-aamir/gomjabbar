@@ -67,3 +67,95 @@ def test_daily_429_with_long_hint_is_quota_day():
         "Rate limit reached on requests per day (RPD). Please try again in 3h2m1s.", 429
     )
     assert classify_error(exc, 1).action == "quota_day"
+
+
+def test_out_of_credits_stops_the_model_for_now():
+    # OpenRouter answers 402 when the account has no credit, 403 when a key's limit is hit.
+    exc = FakeAPIError("Insufficient credits. Add more using https://openrouter.ai/...", 402)
+    assert classify_error(exc, 1).action == "quota_day"
+    exc = FakeAPIError("Key limit exceeded (total limit). Manage it using ...", 403)
+    assert classify_error(exc, 1).action == "quota_day"
+
+
+def test_upstream_rate_limit_retries():
+    # OpenRouter's 429 when the pinned provider is busy: no daily wording, so retry.
+    exc = FakeAPIError(
+        "openai/gpt-oss-20b is temporarily rate-limited upstream. Retry shortly", 429
+    )
+    assert classify_error(exc, 1).action == "retry"
+
+
+# ---- the LiteLLM client, with litellm.acompletion replaced by a fake --------------------------
+
+
+def fake_response(cost: float | None):
+    """An object shaped like a LiteLLM response from OpenRouter."""
+    from types import SimpleNamespace as NS
+
+    message = NS(content="DONE", tool_calls=None, reasoning_content=None)
+    usage = NS(
+        prompt_tokens=1000,
+        completion_tokens=200,
+        prompt_tokens_details=NS(cached_tokens=640),
+        cost=cost,
+    )
+    return NS(
+        choices=[NS(message=message, finish_reason="stop")],
+        usage=usage,
+        model="openai/gpt-oss-20b",
+        system_fingerprint=None,
+        provider="CoreWeave",
+    )
+
+
+def run_client(monkeypatch, model_fields: dict, cost: float | None):
+    """Call LiteLLMChat.complete once against the fake; return (reply, kwargs sent)."""
+    import asyncio
+
+    import litellm
+
+    from pruefstand.agent.llm import LiteLLMChat
+    from pruefstand.config import ModelConfig
+
+    sent: dict = {}
+
+    async def fake_acompletion(**kwargs):
+        sent.update(kwargs)
+        return fake_response(cost)
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+    monkeypatch.setenv("PFS_TEST_KEY", "k")
+    model = ModelConfig(
+        name="openrouter/openai/gpt-oss-20b", api_key_env="PFS_TEST_KEY", **model_fields
+    )
+    client = LiteLLMChat(model, usd_to_eur=0.5)
+    reply = asyncio.run(client.complete([{"role": "user", "content": "hi"}], []))
+    return reply, sent
+
+
+def test_pinned_provider_is_sent_without_fallbacks(monkeypatch):
+    reply, sent = run_client(monkeypatch, {"provider": "coreweave/fp4"}, cost=0.002)
+    assert sent["extra_body"] == {
+        "provider": {"order": ["coreweave/fp4"], "allow_fallbacks": False}
+    }
+    # The serving provider and cached tokens come back on the reply.
+    assert reply.provider == "CoreWeave"
+    assert reply.tokens_cached == 640
+
+
+def test_no_provider_means_no_routing_options(monkeypatch):
+    _, sent = run_client(monkeypatch, {}, cost=0.002)
+    assert "extra_body" not in sent
+
+
+def test_reported_cost_wins_over_configured_price(monkeypatch):
+    # usage.cost is 0.002 USD; at 0.5 EUR per USD that is 0.001 EUR. The configured price
+    # (1 USD per million tokens) would give 0.0006 EUR and must not be used.
+    reply, _ = run_client(monkeypatch, {"price_usd_per_mtok": 1.0}, cost=0.002)
+    assert abs(reply.cost_eur - 0.001) < 1e-12
+
+
+def test_configured_price_is_the_fallback(monkeypatch):
+    # No cost in the response: 1,200 tokens at 1 USD per million = 0.0012 USD = 0.0006 EUR.
+    reply, _ = run_client(monkeypatch, {"price_usd_per_mtok": 1.0}, cost=None)
+    assert abs(reply.cost_eur - 0.0006) < 1e-12

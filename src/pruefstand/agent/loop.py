@@ -126,8 +126,12 @@ class AgentOutcome:
     final_claim: FinalClaim
     tokens_in: int = 0
     tokens_out: int = 0
+    tokens_cached: int = 0  # part of tokens_in the provider served from its prompt cache
     cost_eur: float = 0.0
     model_version: str = ""
+    # Upstream providers that served this episode's replies. With OpenRouter pinning there
+    # is exactly one; more than one would show that the pin did not hold.
+    providers: set[str] = field(default_factory=set)
     llm_requests: int = 0  # HTTP requests, retries included (for quota estimates)
     quota_exhausted: bool = False  # the model's daily quota ran out mid-episode
     throttle_s: float = 0.0  # time spent waiting on the quota throttle (not agent time)
@@ -349,7 +353,10 @@ class AgentSession:
             outcome.steps += 1
             outcome.tokens_in += reply.tokens_in
             outcome.tokens_out += reply.tokens_out
+            outcome.tokens_cached += reply.tokens_cached
             outcome.cost_eur += reply.cost_eur
+            if reply.provider:
+                outcome.providers.add(reply.provider)
             outcome.llm_requests += reply.attempts
             outcome.model_version = reply.model_version or outcome.model_version
             outcome.throttle_s += reply.throttle_s
@@ -360,6 +367,9 @@ class AgentSession:
                     "message": reply.message,
                     "finish_reason": reply.finish_reason,
                     "throttle_s": round(reply.throttle_s, 3),
+                    "provider": reply.provider,
+                    "tokens_cached": reply.tokens_cached,
+                    "cost_eur": reply.cost_eur,
                     **reply.extra,
                 },
                 tokens_in=reply.tokens_in,

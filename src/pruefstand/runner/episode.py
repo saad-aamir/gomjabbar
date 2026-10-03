@@ -146,9 +146,11 @@ async def run_episode(
             llm_requests=outcome.llm_requests,
             tokens_in=outcome.tokens_in,
             tokens_out=outcome.tokens_out,
+            tokens_cached_in=outcome.tokens_cached,
             cost_eur=outcome.cost_eur,
             duration_s=round(clock() - started, 3),
             model_version=outcome.model_version or "unknown",
+            provider="+".join(sorted(outcome.providers)),
             config_hash=info.config_hash,
             git_commit=info.git_commit,
         )

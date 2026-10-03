@@ -28,14 +28,20 @@ FaultProfile = Literal[
 class ModelConfig(BaseModel):
     """One model under test (or the redteam model)."""
 
-    name: str  # LiteLLM model string, e.g. "groq/openai/gpt-oss-20b"
+    name: str  # LiteLLM model string, e.g. "openrouter/openai/gpt-oss-20b"
     api_key_env: str | None = None  # name of the env var holding the key; None for Ollama
     free_tier: bool = False  # True if calls cost nothing (quota-limited instead)
+    # OpenRouter only: the one upstream endpoint every request must go to, as a provider slug
+    # such as "coreweave/fp4". Sent with allow_fallbacks false, so OpenRouter fails the request
+    # instead of silently routing to another provider (reproducibility, DEVIATIONS.md).
+    provider: str | None = None
     rpm_limit: int | None = None  # requests per minute allowed by the provider
     rpd_limit: int | None = None  # requests per day allowed by the provider
-    tpm_limit: int | None = None  # tokens per minute allowed by the provider (Groq free tier)
+    tpm_limit: int | None = None  # tokens per minute allowed by the provider, if it has one
     tpd_limit: int | None = None  # tokens per day allowed by the provider, if known
-    price_usd_per_mtok: float | None = None  # only for paid models LiteLLM cannot price
+    # Fallback price for paid models when the response carries no cost of its own. OpenRouter
+    # reports the cost of every response, so for it this is only a safety net.
+    price_usd_per_mtok: float | None = None
 
     @model_validator(mode="after")
     def _key_env_is_prefixed(self) -> ModelConfig:
@@ -43,6 +49,14 @@ class ModelConfig(BaseModel):
         # anything Claude Code or other tools read, and lets the proxy strip them from the server.
         if self.api_key_env is not None and not self.api_key_env.startswith("PFS_"):
             raise ValueError(f"api_key_env must start with PFS_, got {self.api_key_env!r}")
+        return self
+
+    @model_validator(mode="after")
+    def _provider_needs_openrouter(self) -> ModelConfig:
+        # Provider pinning is an OpenRouter routing feature; elsewhere it would be ignored
+        # silently, which would make the config claim a pin that never happened.
+        if self.provider is not None and not self.name.startswith("openrouter/"):
+            raise ValueError(f"provider is only supported for openrouter/ models: {self.name}")
         return self
 
 
@@ -56,7 +70,7 @@ class RunConfig(BaseModel):
     redteam_model: ModelConfig | None = None
     temperature: float | None = None  # None means the provider default
     # Output cap per model call. MCPMark uses 32768 (src/agents/mcpmark_agent.py:852); without
-    # it Groq cuts gpt-oss replies at 2048 tokens, often mid-reasoning (DEVIATIONS.md).
+    # it some providers cut gpt-oss replies short, often mid-reasoning (DEVIATIONS.md).
     max_tokens: int = 32768
     seed: int
     k: int = 5  # baseline attempts per task

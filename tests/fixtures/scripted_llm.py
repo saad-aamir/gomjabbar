@@ -51,9 +51,12 @@ def fail(error: Exception | None = None) -> Step:
 class ScriptedLLM:
     """ChatModel that replays a script. Running past the end returns "FAILED out of script"."""
 
-    def __init__(self, steps: list[Step], model_version: str = "scripted-1"):
+    def __init__(
+        self, steps: list[Step], model_version: str = "scripted-1", provider: str = "ScriptedCo"
+    ):
         self.steps = list(steps)
         self.model_version = model_version
+        self.provider = provider  # reported like OpenRouter's upstream provider name
         self.position = 0
         self.seen: list[list[dict]] = []  # a copy of the messages at every call
 
@@ -88,6 +91,8 @@ class ScriptedLLM:
             message=message,
             tokens_in=10,
             tokens_out=5,
+            tokens_cached=4,  # as if part of the prompt came from the provider's cache
             model_version=self.model_version,
+            provider=self.provider,
             throttle_s=step.throttle_s,
         )

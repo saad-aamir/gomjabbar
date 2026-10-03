@@ -146,6 +146,9 @@ async def test_full_run_results(tmp_path):
     assert all(r.false_success for r in results if r.spec.model == "bad")
     # Every row carries config hash, git commit and model version.
     assert all(r.config_hash and r.git_commit == "testcommit" and r.model_version for r in results)
+    # Provider and cached tokens are recorded on every row (OpenRouter switch, 2026-10-03).
+    assert all(r.provider == "ScriptedCo" for r in results)
+    assert all(r.tokens_cached_in == 4 * r.steps for r in results)
     # Failed episodes have their traces saved as notable.
     assert len(list((store.run_dir / "notable").iterdir())) == 4
 
