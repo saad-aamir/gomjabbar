@@ -10,6 +10,18 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: one dev run of record for M1 and M2, resumed at a newer commit
+- **What the spec said:** nothing on how runs are organized; the M1 baseline was its own run.
+- **What we did instead:** `runs/dev-20261003-052646` is the run of record for the dev suite. Its filesystem baseline started in a git worktree pinned at the commit that introduced the new rules (`a847da9`), so M2 code changes could not reach running episodes. After 7 episodes it was stopped, moved into the repo and resumed with `--resume` at a later commit for the rest of the baseline (filesystem and postgres), then `--only paraphrase` and `--only fault`. Every row records the commit that ran it (`git_commit`). Episodes in flight when the worktree run stopped were not written and reran on resume. `runs/dev-20261003-033437` (provider-default temperature, no re-sampling) is kept for the record only.
+- **Why:** robustness drop compares each condition with the baseline of the same tasks, models and config, so one results file keeps that comparison simple. The baseline code path did not change between the two commits (an empty proxy plan is byte-identical passthrough, tested). Claude's choice, to save about an hour of wall time.
+- **Effect on results:** none expected; baseline rows carry two different commits.
+
+## 2026-10-03: the partial fault profile is built and tested but not in this run
+- **What the spec said:** M2 step 5: after every P0 profile works, build `partial` (P1) and add it to `fault_profiles` in the configs.
+- **What we did instead:** `partial` is implemented in `proxy/mutators.py` with unit and end-to-end tests, but not added to `fault_profiles` yet.
+- **Why:** adding it changes the run config, and the dev run of record (above) refuses to resume with a different config. It can be added before the next run (40 more fault episodes, about 0.08 EUR at the pilot's costs).
+- **Effect on results:** the M2 fault results cover the six P0 profiles only.
+
 ## 2026-10-03: how paraphrases are generated and checked
 - **What the spec said:** SPEC 5.6: P paraphrases per task with the redteam model, cached, each passing a literal check (paths, file names, numbers, quoted strings, table and column names) and an LLM equivalence check, max 3 tries, then drop and log.
 - **What we did instead (choices where the spec is open):** only `description.md` is reworded; MCPMark's fixed suffix is appended unchanged to every paraphrase. The literal check also covers Markdown code spans, snake_case and CamelCase identifiers (column and table names) and every Markdown table cell, and ignores Markdown list numbering on both sides (so "3." in a list neither counts as nor satisfies the number 3). Each variant gets a different style hint (prose, reordered list, short message) so the three differ from each other. The generation prompt (version v2) lists the literals the check will demand; v1 did not, and gpt-oss kept writing small numbers as words ("five"), which dropped every variant of `uppercase`. The equivalence check asks one question covering both directions. Generation is its own command, `pruefstand paraphrase`, guarded by the key spend limit; a run refuses to start paraphrase episodes without a valid cache (missing, or made from a different description). A variant that was dropped has no episode. The cache files record generator, prompt version, every rejection with the failed check, every drop and the cost. `docs/notes/paraphrase-samples.md` shows 5 for review.
