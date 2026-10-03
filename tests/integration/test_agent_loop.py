@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 from pruefstand.agent.loop import AgentSession, LoopLimits, ServerLaunch, Trace
 from tests.fixtures.scripted_llm import ScriptedLLM, call, fail, final, raw_call
 
@@ -203,3 +205,71 @@ async def test_empty_reply_ends_the_episode_after_three_resamples(tmp_path):
     assert len(llm.seen) == 4  # the scripted DONE was never asked for
     resampled = [e.payload["resampled"] for e in trace.events if "empty_reply" in e.payload]
     assert resampled == [True, True, True, False]
+
+
+# ---- fault profiles end to end: the real server executes the call in every profile ------------
+
+FAULT_PROFILES = [
+    "latency",
+    "timeout",
+    "rpc_error",
+    "tool_error",
+    "malformed",
+    "empty",
+    "rate_limit",
+    "partial",
+]
+
+
+async def run_with_fault(tmp_path, profile):
+    from pruefstand.proxy.plan import FaultRule, ProxyPlan, save_plan
+
+    plan_path = tmp_path / "plan.json"
+    save_plan(ProxyPlan(faults=[FaultRule(profile=profile, nth_call=2, latency_ms=200)]), plan_path)
+    llm = ScriptedLLM(
+        [
+            call("write_note", name="a", text="first"),
+            call("write_note", name="b", text="second"),  # the 2nd tools/call: faulted
+            call("list_notes"),
+            final("DONE"),
+        ]
+    )
+    trace = Trace("ep1")
+    async with AgentSession(
+        launch(tmp_path),
+        llm,
+        LoopLimits(tool_timeout_s=2, episode_timeout_s=60),
+        trace,
+        plan_path=plan_path,
+        proxy_log_path=tmp_path / "proxy.jsonl",
+        stderr_path=tmp_path / "stderr.log",
+    ) as session:
+        outcome = await session.run("Write two notes.")
+    return outcome, llm
+
+
+@pytest.mark.parametrize("profile", FAULT_PROFILES)
+async def test_server_executes_the_call_in_every_fault_profile(tmp_path, profile):
+    outcome, llm = await run_with_fault(tmp_path, profile)
+    # The faulted write reached the real server: note b exists in its JSON file.
+    assert json.loads((tmp_path / "notes.json").read_text()) == {"a": "first", "b": "second"}
+    # The session survived and the next call worked normally.
+    assert outcome.stop_reason == "final_answer"
+    after_fault = [m for m in llm.seen[3] if m["role"] == "tool"]
+    assert after_fault[-1]["content"] == "a\nb"
+    # What the model was shown for the faulted call.
+    shown = [m for m in llm.seen[2] if m["role"] == "tool"][-1]["content"]
+    expected = {
+        "latency": "wrote b",
+        "timeout": "Tool error: Timed out",
+        "rpc_error": "Tool error: Internal error",
+        "tool_error": "Tool error: Service temporarily unavailable",
+        "malformed": "Tool error: Timed out",
+        "empty": "",
+        "rate_limit": "Tool error: 429 Too Many Requests. Retry after 2 seconds.",
+        "partial": "wr",  # 30% of "wrote b" (7 characters) is 2 characters
+    }[profile]
+    assert shown.startswith(expected) if expected else shown == ""
+    # Exactly one mutation was logged by the proxy.
+    log = [json.loads(x) for x in (tmp_path / "proxy.jsonl").read_text().splitlines()]
+    assert [e["detail"]["profile"] for e in log if e["kind"] == "fault"] == [profile]

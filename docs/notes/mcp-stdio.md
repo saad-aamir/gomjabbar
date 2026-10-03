@@ -40,7 +40,9 @@ Observed with 1.30.0:
 3. The `call_tool` that was waiting for that response never gets one and raises `McpError: Timed out while waiting for response to ClientRequest. Waited 3.0 seconds.`
 4. The next `call_tool` on the same session succeeds.
 
-So in 1.30.0 the `malformed` profile behaves like `timeout` from the agent's point of view: the loop's per call timeout (`tool_timeout_s`) fires and the model sees a tool error. It does **not** kill the transport, so `stop_reason = "transport_failure"` is not expected for `malformed`. **Decision (2026-10-02):** `malformed` is an ordinary fault profile; `transport_failure` is only for genuinely dead sessions (SPEC 5.2). Without a read timeout the call would hang forever, so the loop must always pass `read_timeout_seconds`. M2 will re-check this with the proxy in place and the real servers.
+So in 1.30.0 the `malformed` profile behaves like `timeout` from the agent's point of view: the loop's per call timeout (`tool_timeout_s`) fires and the model sees a tool error. It does **not** kill the transport, so `stop_reason = "transport_failure"` is not expected for `malformed`. **Decision (2026-10-02):** `malformed` is an ordinary fault profile; `transport_failure` is only for genuinely dead sessions (SPEC 5.2). Without a read timeout the call would hang forever, so the loop must always pass `read_timeout_seconds`.
+
+**Re-checked in M2 (2026-10-03) with the real proxy:** `tests/integration/test_agent_loop.py::test_server_executes_the_call_in_every_fault_profile` runs every profile through `python -m pruefstand.proxy` against the fake server with the real agent loop. For `malformed` the model sees `Tool error: Timed out while waiting for response ...` after `tool_timeout_s`, the server has executed the call, and the next call on the same session works. The parse error is client-side, so the server behind the proxy does not matter. The same holds for `timeout`. No profile killed the transport.
 
 ## When the transport really dies
 

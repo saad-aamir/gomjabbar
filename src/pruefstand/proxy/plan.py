@@ -5,7 +5,7 @@ Why: the runner decides the stress for an episode and the proxy carries it out i
 process, so the plan is the contract between the two. It is written to plan.json.
 How: the runner builds a ProxyPlan per EpisodeSpec, saves it with `save_plan`, and passes the
 path on the proxy command line; the proxy loads it with `load_plan`. An empty plan means
-pure passthrough, which is what baseline uses. Mutations are implemented in M2.
+pure passthrough, which is what baseline uses. Fault mutations live in mutators.py.
 """
 
 from __future__ import annotations
