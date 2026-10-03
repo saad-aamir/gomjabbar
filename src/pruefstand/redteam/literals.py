@@ -86,9 +86,10 @@ def extract_literals(text: str) -> list[Literal]:
 def _present(literal: Literal, text: str) -> bool:
     """True if the literal appears in the text (numbers only as whole numbers)."""
     if literal.kind == "number":
-        # "3" must not be satisfied by "30" or "3.5".
+        # "3" must not be satisfied by "30" or "3.5", nor by list numbering ("3. Save"),
+        # which extraction ignores too.
         pattern = rf"(?<![\d.]){re.escape(literal.text)}(?![\d]|\.\d)"
-        return re.search(pattern, text) is not None
+        return re.search(pattern, _LIST_MARKER.sub(" ", text)) is not None
     return literal.text in text
 
 

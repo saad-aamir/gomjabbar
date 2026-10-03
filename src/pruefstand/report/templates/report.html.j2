@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prüfstand report</title>
+<style>
+  /* Theme tokens: light by default, dark from the OS or data-theme="dark". */
+  :root {
+    color-scheme: light;
+    --surface-0: #f5f5f3; --surface-1: #fcfcfb; --border: #dddcd7;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+    --grid: #e6e5e0; --series-1: #2a78d6; --series-2: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #111110; --surface-1: #1a1a19; --border: #3a3a37;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a998f;
+      --grid: #2e2e2b; --series-1: #3987e5; --series-2: #d95926;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --border: #3a3a37;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a998f;
+    --grid: #2e2e2b; --series-1: #3987e5; --series-2: #d95926;
+  }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 8px; }
+  h3 { font-size: 15px; margin: 20px 0 6px; color: var(--text-secondary); }
+  p.lead, .muted { color: var(--text-secondary); }
+  section.panel { background: var(--surface-1); border: 1px solid var(--border);
+                  border-radius: 8px; padding: 16px; margin: 12px 0; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border);
+           vertical-align: top; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.metric { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .detail { color: var(--text-muted); font-size: 12px; }
+  tr.dim td { padding-top: 12px; font-weight: 600; color: var(--text-secondary);
+              border-bottom: none; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px;
+            color: var(--text-secondary); font-size: 13px; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+         margin-right: 6px; vertical-align: -1px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart .grid { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .axis { fill: var(--text-muted); font-size: 11px; }
+  svg.chart .label { fill: var(--text-secondary); font-size: 12px; }
+  svg.chart .dot { stroke: var(--surface-1); stroke-width: 2; }
+  code { font-size: 13px; }
+  a { color: var(--series-1); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Prüfstand report: {{ meta.run_id }}</h1>
+  <p class="lead">{{ meta.episodes }} episodes, {{ meta.models | length }} models, services: {{ meta.services | join(", ") }}.
+  Every number is a mean over tasks with a 95% bootstrap interval that resamples tasks.
+  State pass is MCPMark's <code>verify.py</code> on the final state. Exploratory dev-suite results, not a reproduction of MCPMark's leaderboard.</p>
+
+  <h2>1. Report card</h2>
+  <p class="muted">Rates in percent, drops in percentage points (baseline minus condition, paired by task). Transport failures are host results and are excluded from every model metric; they are listed separately. "MCPMark rule" counts an episode as failed if it needed an empty-reply re-sample, because MCPMark's agent would have stopped there.</p>
+  {% for model, cards in cards_by_model %}
+  <section class="panel">
+    <h3><span class="key" style="background: var(--series-{{ loop.index }})"></span>{{ model }}</h3>
+    <table>
+      <thead><tr><th>Metric</th>{% for card in cards %}<th>{{ card.scope }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for dimension, labels in dimensions(cards) %}
+        <tr class="dim"><td colspan="{{ cards | length + 1 }}">{{ dimension }}</td></tr>
+        {% for label in labels %}
+        <tr><td class="metric">{{ label }}</td>{% for card in cards %}{% set value, detail = cell(card, label) %}<td class="num">{{ value }}{% if detail %}<br><span class="detail">{{ detail }}</span>{% endif %}</td>{% endfor %}</tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+
+  <h2>2. Pass rate per condition</h2>
+  {% for scope, svg in condition_charts %}
+  <section class="panel">
+    <h3>{{ scope }}</h3>
+    <div class="legend">{% for model in meta.models %}<span><span class="key" style="background: var(--series-{{ loop.index }})"></span>{{ model }}</span>{% endfor %}</div>
+    {{ svg | safe }}
+  </section>
+  {% endfor %}
+
+  <h2>3. Fault recovery per fault profile</h2>
+  <p class="muted">Pass rate under each fault profile (the 2nd tool call breaks; the server still executes it). Transport failures excluded.</p>
+  {% for scope, svg in fault_charts %}
+  <section class="panel">
+    <h3>{{ scope }}</h3>
+    <div class="legend">{% for model in meta.models %}<span><span class="key" style="background: var(--series-{{ loop.index }})"></span>{{ model }}</span>{% endfor %}</div>
+    {{ svg | safe }}
+  </section>
+  {% else %}
+  <p class="muted">No fault episodes in this run.</p>
+  {% endfor %}
+
+  <h2>4. Attack success per payload</h2>
+  <p class="muted">Security conditions arrive in M3.</p>
+
+  <h2>5. Failing episodes</h2>
+  {% if transport %}
+  <h3>Transport failures (host robustness, not model results)</h3>
+  <section class="panel"><table>
+    <thead><tr><th>Model</th><th>Task</th><th>Condition</th><th>Variant</th><th>#</th><th>Trace</th></tr></thead>
+    <tbody>{% for f in transport %}<tr><td>{{ f.model }}</td><td><code>{{ f.task }}</code></td><td>{{ f.condition }}</td><td>{{ f.variant }}</td><td>{{ f.attempt }}</td><td>{% if f.trace %}<a href="{{ f.trace }}">{{ f.episode_id }}</a>{% else %}{{ f.episode_id }}{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></section>
+  {% endif %}
+  <h3>Model failures ({{ failing | length }})</h3>
+  <section class="panel"><table>
+    <thead><tr><th>Model</th><th>Task</th><th>Condition</th><th>Variant</th><th>#</th><th>Stop</th><th>Claim</th><th>Trace</th></tr></thead>
+    <tbody>{% for f in failing %}<tr><td>{{ f.model }}</td><td><code>{{ f.task }}</code></td><td>{{ f.condition }}</td><td>{{ f.variant }}</td><td>{{ f.attempt }}</td><td>{{ f.stop }}</td><td>{{ f.claim }}{% if f.false_success %} (false success){% endif %}</td><td>{% if f.trace %}<a href="{{ f.trace }}">{{ f.episode_id }}</a>{% else %}{{ f.episode_id }}{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></section>
+  <p class="muted">Trace links point to the gzipped traces in <code>notable/</code> next to this file.</p>
+
+  <h2>6. Run metadata</h2>
+  <section class="panel"><table><tbody>
+    {% for key, value in meta.rows %}<tr><th>{{ key }}</th><td><code>{{ value }}</code></td></tr>{% endfor %}
+  </tbody></table></section>
+</main>
+</body>
+</html>

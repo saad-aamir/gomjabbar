@@ -229,21 +229,37 @@ def paraphrase(
     key_guard = _key_guard(cfg)
     loader = MCPMarkTasks()
     tasks = [loader.load(task_id) for task_id in _task_ids(cfg)]
-    total_eur = 0.0
-    for task in tasks:
-        if cache_path(task.id).exists():
-            typer.echo(f"cached   {task.id}")
-            continue
-        # The key's absolute limit: one task costs a few cents at most; reserve 0.05 USD.
-        if key_guard is not None and not key_guard.can_start(0.05, in_flight=1):
-            typer.echo(f"key spend limit reached ({key_guard.error or key_guard.last_usage}); stop")
-            raise typer.Exit(1)
-        log = asyncio.run(generate_for_task(task, model, cfg.redteam_model.name, cfg.paraphrases))
-        total_eur += log.cost_eur
-        typer.echo(
-            f"made     {task.id}: {len(log.accepted)}/{cfg.paraphrases} accepted, "
-            f"{len(log.rejected)} rejected, {len(log.dropped)} dropped, EUR {log.cost_eur:.4f}"
-        )
+    # Up to 5 tasks at a time; each task's variants are made one after another.
+    parallel = 5
+    totals = {"eur": 0.0}
+
+    async def make(task, gate: asyncio.Semaphore) -> None:
+        async with gate:
+            # The key's absolute limit: reserve 0.05 USD for each task that may be running.
+            if key_guard is not None and not key_guard.can_start(0.05, in_flight=parallel):
+                typer.echo(
+                    f"skipped  {task.id}: key spend limit ({key_guard.error or key_guard.last_usage})"
+                )
+                return
+            log = await generate_for_task(task, model, cfg.redteam_model.name, cfg.paraphrases)
+            totals["eur"] += log.cost_eur
+            typer.echo(
+                f"made     {task.id}: {len(log.accepted)}/{cfg.paraphrases} accepted, "
+                f"{len(log.rejected)} rejected, {len(log.dropped)} dropped, EUR {log.cost_eur:.4f}"
+            )
+
+    async def make_all() -> None:
+        gate = asyncio.Semaphore(parallel)
+        todo = []
+        for task in tasks:
+            if cache_path(task.id).exists():
+                typer.echo(f"cached   {task.id}")
+            else:
+                todo.append(make(task, gate))
+        await asyncio.gather(*todo)
+
+    asyncio.run(make_all())
+    total_eur = totals["eur"]
     page = REPO_ROOT / "docs" / "notes" / "paraphrase-samples.md"
     page.write_text(samples_markdown(tasks, samples), encoding="utf-8")
     typer.echo(f"done: EUR {total_eur:.4f} this time; review page {page}")
@@ -303,15 +319,21 @@ def estimate(
 @app.command()
 def report(
     run_dir: Path = typer.Argument(..., help="runs/<run_id>"),
-    text: bool = typer.Option(True, "--text/--html", help="terminal card (HTML arrives in M3)"),
+    text: bool = typer.Option(False, "--text", help="print the card only, no HTML"),
 ) -> None:
-    """Print the report card of a run."""
-    if not text:
-        typer.echo("The HTML report arrives in M3.", err=True)
-        raise typer.Exit(2)
+    """Write RUN_DIR/report.html and print the report card (SPEC 12)."""
+    from pruefstand.report.card import build_card, card_text
+    from pruefstand.report.html import write_report
+
     store = RunStore(run_dir)
     cfg = load_config(store.config_path)
-    typer.echo(summary_text(store.read_results(), cfg.k, cfg.seed))
+    results = store.read_results()
+    # Baseline diagnostics (parse failures, empty replies, providers), then the full card.
+    typer.echo(summary_text(results, cfg.k, cfg.seed))
+    typer.echo("")
+    typer.echo(card_text(build_card(results, cfg.k, cfg.seed)))
+    if not text:
+        typer.echo(f"\nwrote {write_report(run_dir)}")
 
 
 def _check(ok: bool, label: str, detail: str = "", warn: bool = False) -> bool:

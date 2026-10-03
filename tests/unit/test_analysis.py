@@ -62,3 +62,34 @@ def test_bootstrap_of_constant_values_has_zero_width():
 
 def test_bootstrap_empty():
     assert math.isnan(bootstrap_mean({}, seed=1).value)
+
+
+def test_robustness_drop_is_paired_by_task():
+    from pruefstand.analysis.metrics import per_task_drop
+    from pruefstand.models import Condition
+    from tests.helpers import make_result, make_spec
+
+    def res(task, condition, passed, attempt=0):
+        spec = make_spec(task_id=task, condition=condition, attempt=attempt)
+        return make_result(spec, passed=passed)
+
+    baseline = [
+        res("t1", Condition.BASELINE, True, 0),
+        res("t1", Condition.BASELINE, True, 1),
+        res("t2", Condition.BASELINE, True, 0),
+        res("t2", Condition.BASELINE, False, 1),
+        res("t3", Condition.BASELINE, True, 0),  # no stressed episode: left out
+    ]
+    stressed = [res("t1", Condition.FAULT, False), res("t2", Condition.FAULT, True)]
+    # t1: 1.0 - 0.0 = 1.0; t2: 0.5 - 1.0 = -0.5 (stress happened to help).
+    assert per_task_drop(baseline, stressed) == {"t1": 1.0, "t2": -0.5}
+
+
+def test_fault_recovery_excludes_transport_failures_and_false_success_per_task():
+    from pruefstand.analysis.metrics import fault_recovery_results, per_task_false_success
+    from tests.helpers import make_result, make_spec
+
+    ok = make_result(make_spec(task_id="t1"), passed=False, false_success=True)
+    dead = make_result(make_spec(task_id="t1", attempt=1), stop_reason="transport_failure")
+    assert fault_recovery_results([ok, dead]) == [ok]
+    assert per_task_false_success([ok, dead]) == {"t1": 0.5}

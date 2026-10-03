@@ -45,6 +45,9 @@ def test_numbers_must_stay_whole_numbers():
 def test_list_numbering_is_not_a_literal():
     original = "1. Read the file\n2. Write `out.txt`\n"
     assert "1" not in kinds(original) and "2" not in kinds(original)
+    # ... and list numbering in a paraphrase cannot stand in for a number of the task.
+    lost = missing_literals("Split into 3 files.", "1. Split\n2. into\n3. three files")
+    assert [m.text for m in lost] == ["3"]
 
 
 def test_quoted_strings_double_single_and_curly():

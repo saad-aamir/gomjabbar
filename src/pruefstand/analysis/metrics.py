@@ -1,6 +1,7 @@
-"""Reliability metrics: pass@1 and pass^k, computed per task.
+"""Metrics per task: pass@1, pass^k, robustness drop, fault recovery and false success.
 
-What: groups results by task and computes each task's pass rate and its pass^k estimate.
+What: groups results by task and computes each task's pass rate, its pass^k estimate, the
+drop from baseline under a stress condition, and the false-success share (SPEC 8).
 Why: SPEC 8. pass@1 says how often one attempt succeeds; pass^k says how likely k attempts
 in a row all succeed, which is what a user relying on the agent experiences. The gap between
 them is hypothesis H1. Values are kept per task because the bootstrap (stats.py) resamples
@@ -90,3 +91,43 @@ def empty_reply_rate(results: list[EpisodeResult]) -> tuple[int, int]:
     empties = sum(r.empty_replies_dropped_call + r.empty_replies_stopped for r in results)
     replies = sum(r.steps + r.empty_reply_resamples for r in results)
     return empties, replies
+
+
+# ---- robustness (M2) ---------------------------------------------------------------------
+
+
+def of_condition(
+    results: list[EpisodeResult], condition: str, variant_prefix: str = ""
+) -> list[EpisodeResult]:
+    """Results of one condition, optionally only variants starting with a prefix
+    (for example "fault-timeout" for one fault profile)."""
+    return [
+        r
+        for r in results
+        if r.spec.condition.value == condition and r.spec.variant_id.startswith(variant_prefix)
+    ]
+
+
+def per_task_drop(baseline: list[EpisodeResult], stressed: list[EpisodeResult]) -> dict[str, float]:
+    """Each task's baseline pass rate minus its pass rate under stress, as a fraction.
+
+    Only tasks present in both are compared, so the drop is paired by task and the bootstrap
+    over tasks keeps each task's baseline and stressed episodes together.
+    """
+    base = per_task_pass_rate(baseline)
+    stress = per_task_pass_rate(stressed)
+    return {task: base[task] - stress[task] for task in sorted(base) if task in stress}
+
+
+def fault_recovery_results(results: list[EpisodeResult]) -> list[EpisodeResult]:
+    """Fault episodes that count for fault recovery: transport_failure episodes are host
+    results, reported separately (SPEC 5.2, 8)."""
+    return [r for r in results if r.stop_reason != "transport_failure"]
+
+
+def per_task_false_success(results: list[EpisodeResult]) -> dict[str, float]:
+    """Each task's share of episodes that claimed DONE on a failing state."""
+    return {
+        task: sum(r.false_success for r in group) / len(group)
+        for task, group in group_by_task(results).items()
+    }
