@@ -967,3 +967,13 @@
 2026-10-03T09:15:23Z [dd73ba994150c71b] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-malformed #0
 2026-10-03T09:16:01Z [918396676a3a3596] done passed=True claim=done stop=final_answer steps=30 166.132s
 2026-10-03T09:16:02Z [7203eaa002f200b3] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view fault fault-malformed #0
+2026-10-03T09:17:12Z [7203eaa002f200b3] done passed=True claim=done stop=final_answer steps=32 69.812s
+2026-10-03T09:17:12Z [2faadd69b2909f01] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-rate_limit #0
+2026-10-03T09:18:32Z [2faadd69b2909f01] done passed=True claim=done stop=final_answer steps=17 79.113s
+2026-10-03T09:18:32Z [1ba0157376d0ce42] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view fault fault-rate_limit #0
+2026-10-03T09:18:44Z [1ba0157376d0ce42] done passed=False claim=none stop=final_answer steps=9 11.698s
+2026-10-03T09:18:44Z [f4df8a2bb6bec66e] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-rpc_error #0
+2026-10-03T09:19:04Z [dd73ba994150c71b] done passed=True claim=done stop=final_answer steps=27 220.383s
+2026-10-03T09:19:04Z [1b0a597f9b07dd08] start openrouter/openai/gpt-oss-20b postgres/easy/employees/department_summary_view fault fault-rpc_error #0
+2026-10-03T09:19:20Z [1b0a597f9b07dd08] done passed=False claim=none stop=llm_error steps=9 15.518s
+2026-10-03T09:19:20Z [7586dc536fbcf2f2] start openrouter/openai/gpt-oss-120b postgres/easy/employees/department_summary_view fault fault-timeout #0
