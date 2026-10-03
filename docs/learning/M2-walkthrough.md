@@ -4,6 +4,25 @@
 
 Prüfstand now runs MCPMark's postgres tasks as well as its filesystem tasks: each postgres episode gets its own database, cloned from a template inside MCPMark's own PostgreSQL 17 Docker image, and is graded by MCPMark's `verify.py`. The chaos proxy can break the second tool call of an episode in eight ways (latency, timeout, rpc_error, tool_error, malformed, empty, rate_limit, partial) while the real server still executes it. The redteam model writes three paraphrases per task, each checked by a deterministic literal check and an LLM equivalence check, and caches them so every model sees the same text. Two new conditions use these (paraphrase, fault), and the analysis adds robustness drop, fault recovery and false-success rate with task-level bootstrap intervals, shown in a self-contained `report.html`. Before M2 proper, the M1 rules changed (empty replies re-sampled, temperature 1.0, a hard limit on the key's total spend, 401 handled like missing credit) and the filesystem baseline was re-run under them as the baseline of record.
 
+## Results at the gate (dev run `runs/dev-20261003-052646`, exploratory)
+
+552 episodes on the 20 easy dev tasks (10 filesystem, 10 postgres): baseline k=5, 56 paraphrase variants, 6 fault profiles, both models, CoreWeave pinned, temperature 1.0. Cost 1.05 EUR (7,753 requests); the key's total spend after M2 is 1.55 USD. Numbers are means over tasks with 95% task-bootstrap intervals; with 20 tasks the intervals are wide and most drops include zero.
+
+| | gpt-oss-120b | gpt-oss-20b |
+| --- | --- | --- |
+| pass@1 (state) | 87.0 [74.0, 97.0] | 75.0 [59.0, 89.0] |
+| pass^5 | 75.0 [55.0, 90.0] | 50.0 [29.9, 70.0] |
+| pass@1, MCPMark rule | 80.0 [67.0, 91.0] | 62.0 [48.0, 75.0] |
+| pass^5, MCPMark rule | 50.0 [30.0, 70.0] | 20.0 [5.0, 40.0] |
+| drop under paraphrase (pts) | 0.3 [-9.0, 10.0] | 11.7 [1.7, 23.0] |
+| drop under fault (pts) | 1.2 [-6.8, 9.3] | 8.3 [-2.5, 18.3] |
+| fault recovery | 85.8 [73.3, 95.8] | 66.7 [52.5, 80.0] |
+| false success (baseline / paraphrase / fault) | 10.0 / 10.0 / 9.2 | 8.0 / 1.7 / 4.2 |
+| empty replies per model reply | 1.2% | 5.4% |
+| transport failures | 0 | 0 |
+
+The biggest single fault effect is `empty` on 20b (25.0 [5.0, 45.0] points). Part of 20b's paraphrase drop is provider parse failures: 11 of its 56 paraphrase episodes ended as `llm_error`, against 8 of 100 baseline episodes.
+
 ## File map
 
 Source (`src/pruefstand/`), new or changed in M2:
