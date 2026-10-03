@@ -20,7 +20,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
-from pruefstand.models import Service
+from pruefstand.models import Condition, Service
 from pruefstand.paths import REPO_ROOT
 
 # Where the payload files live (SPEC 3). poisoning/ and injection/ are loaded; files in
@@ -130,3 +130,31 @@ def load_pushback(root: Path = PAYLOAD_ROOT) -> dict[str, str]:
     if set(data) != set(PUSHBACK_TYPES):
         raise PayloadError(f"pushback.yaml must define exactly {list(PUSHBACK_TYPES)}")
     return {kind: str(data[kind]).strip() for kind in PUSHBACK_TYPES}
+
+
+# ---- attack variant ids (shared by the attack conditions and the episode runner) --------
+# Each attack condition builds variant ids "<prefix><payload id>" and loads from one folder.
+# Both live here, not in conditions/, so the runner can map a variant id back to its payload
+# (to grade the attacker's goal) without importing a condition module.
+ATTACK_PREFIX: dict[Condition, str] = {Condition.POISON: "poison-", Condition.INJECT: "inject-"}
+ATTACK_FOLDER: dict[Condition, PayloadKind] = {
+    Condition.POISON: "poisoning",
+    Condition.INJECT: "injection",
+}
+
+
+def attack_variant(condition: Condition, payload: Payload) -> str:
+    """The variant id of an attack episode, e.g. "poison-shadow-audit"."""
+    return ATTACK_PREFIX[condition] + payload.id
+
+
+def attack_payload(
+    condition: Condition, variant_id: str, root: Path = PAYLOAD_ROOT
+) -> Payload | None:
+    """The payload an attack episode uses, or None for a condition with no payload (every
+    non-attack condition, so the runner can call it for any episode)."""
+    if condition not in ATTACK_PREFIX:
+        return None
+    return payload_by_id(
+        ATTACK_FOLDER[condition], variant_id.removeprefix(ATTACK_PREFIX[condition]), root
+    )

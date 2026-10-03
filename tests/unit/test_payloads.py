@@ -74,3 +74,23 @@ def test_duplicate_ids_fail(tmp_path):
     write(tmp_path, "injection", "b.yaml", body)
     with pytest.raises(PayloadError, match="duplicate"):
         load_payloads("injection", root=tmp_path)
+
+
+# ---- attack variant <-> payload mapping (used by the runner to grade the attacker's goal) --
+
+
+def test_attack_variant_and_payload_roundtrip():
+    from pruefstand.models import Condition
+    from pruefstand.payloads import attack_payload, attack_variant, payload_by_id
+
+    shadow = payload_by_id("poisoning", "shadow-audit")
+    assert attack_variant(Condition.POISON, shadow) == "poison-shadow-audit"
+    assert attack_payload(Condition.POISON, "poison-shadow-audit").id == "shadow-audit"
+
+    fake = payload_by_id("injection", "fake-error")
+    assert attack_variant(Condition.INJECT, fake) == "inject-fake-error"
+    assert attack_payload(Condition.INJECT, "inject-fake-error").id == "fake-error"
+
+    # Non-attack conditions have no payload, so the runner gets None for any of their episodes.
+    assert attack_payload(Condition.BASELINE, "orig") is None
+    assert attack_payload(Condition.PUSHBACK, "pushback-simple") is None
