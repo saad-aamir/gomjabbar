@@ -19,7 +19,7 @@ from pruefstand.agent.llm import ChatModel
 from pruefstand.conditions import expand
 from pruefstand.config import RunConfig
 from pruefstand.models import Condition, EpisodeSpec, Task
-from pruefstand.runner.budget import BudgetGuard
+from pruefstand.runner.budget import BudgetGuard, KeySpendGuard
 from pruefstand.runner.checkpoint import checkpoint
 from pruefstand.runner.environment import EpisodeEnvironment
 from pruefstand.runner.episode import QuotaPause, RunInfo, run_episode
@@ -59,6 +59,19 @@ def interleave_models(specs: list[EpisodeSpec]) -> list[EpisodeSpec]:
     return order
 
 
+# Smallest cost assumed for one episode by the key spend guard, in USD, so the first
+# episodes of a run (no average yet) still leave room. The M1 baseline's most expensive
+# episode cost about 0.042 USD.
+KEY_RESERVE_MIN_USD = 0.05
+
+
+def key_spend_allows(guard: KeySpendGuard, budget: BudgetGuard, info: RunInfo) -> bool:
+    """True if every worker can run one more average episode under the key's spend limit."""
+    rate = info.config.usd_to_eur or 1.0
+    average_usd = max(budget.average_cost() / rate, KEY_RESERVE_MIN_USD)
+    return guard.can_start(average_usd, in_flight=info.config.concurrency)
+
+
 @dataclass
 class RunStatus:
     total: int  # specs in the grid
@@ -66,6 +79,7 @@ class RunStatus:
     ran: int = 0  # episodes run by this invocation
     paused_models: set[str] = field(default_factory=set)  # models stopped by quota today
     budget_stop: bool = False
+    key_spend_stop: str = ""  # why the key spend guard stopped the run, "" if it did not
     account_problem: str = ""  # provider message when credit ran out or the key was rejected
 
     @property
@@ -84,6 +98,7 @@ async def run_grid(
     checkpoint_every: int | None = None,
     on_result: Callable[[str], None] | None = None,
     clock: Callable[[], float] | None = None,
+    key_guard: KeySpendGuard | None = None,
 ) -> RunStatus:
     """Run every spec that has no result yet. GraderError and other bugs abort the run."""
     completed = store.completed_ids()
@@ -116,6 +131,13 @@ async def run_grid(
                 continue
             if not budget.can_start():
                 status.budget_stop = True
+                return
+            if key_guard is not None and not key_spend_allows(key_guard, budget, info):
+                status.key_spend_stop = (
+                    key_guard.error
+                    or f"key usage USD {key_guard.last_usage:.4f}, cap USD {key_guard.cap_usd:g}"
+                )
+                store.log(f"key spend guard stopped the run: {status.key_spend_stop}")
                 return
             store.log(
                 f"start {spec.model} {spec.task_id} {spec.condition.value} "

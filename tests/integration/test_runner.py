@@ -106,7 +106,13 @@ class FakeClock:
 
 
 async def run(
-    tmp_path, run_dir, llm_for=script_for, grader_error=False, quota_clock=None, stop_after=None
+    tmp_path,
+    run_dir,
+    llm_for=script_for,
+    grader_error=False,
+    quota_clock=None,
+    stop_after=None,
+    key_guard=None,
 ):
     config = make_config()
     store = RunStore(run_dir)
@@ -132,6 +138,7 @@ async def run(
         quota,
         on_result=on_result,
         clock=FakeClock(),
+        key_guard=key_guard,
     )
     return status, store
 
@@ -234,3 +241,28 @@ async def test_rejected_key_pauses_and_same_day_resume_continues(tmp_path):
     status, store = await run(tmp_path, run_dir, quota_clock=lambda: day["t"])
     assert status.finished
     assert store.results_path.read_bytes() == reference.results_path.read_bytes()
+
+
+async def test_key_spend_guard_stops_the_run_before_the_limit(tmp_path):
+    from pruefstand.runner.budget import KeySpendGuard
+
+    # The key already spent 4.36 USD; each episode reserves at least 0.05 USD. After two
+    # episodes (simulated usage +0.05 each) one more would pass 4.50, so the run stops.
+    usage = {"usd": 4.36, "reads": 0}
+
+    def read_usage():
+        usage["reads"] += 1
+        return usage["usd"]
+
+    def billed_script(model):
+        usage["usd"] += 0.05  # the provider bills each episode
+        return script_for(model)
+
+    guard = KeySpendGuard(4.50, read_usage)
+    status, store = await run(
+        tmp_path, tmp_path / "key" / "run", llm_for=billed_script, key_guard=guard
+    )
+    assert len(store.read_results()) == 2
+    assert not status.finished
+    assert "4.4600" in status.key_spend_stop
+    assert usage["usd"] <= 4.50

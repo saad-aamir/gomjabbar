@@ -60,6 +60,22 @@ def _require_preregistration(config: RunConfig) -> None:
             raise typer.Exit(2)
 
 
+def _key_guard(config: RunConfig):
+    """The key spend guard for OpenRouter models, or None if the config sets no key cap."""
+    from pruefstand.runner.budget import KeySpendGuard, openrouter_key_usage_usd
+
+    if config.key_spend_cap_usd is None:
+        return None
+    envs = {m.api_key_env for m in config.models if m.name.startswith("openrouter/")}
+    if config.redteam_model and config.redteam_model.name.startswith("openrouter/"):
+        envs.add(config.redteam_model.api_key_env)
+    envs.discard(None)
+    if len(envs) != 1:
+        raise typer.BadParameter("key_spend_cap_usd needs exactly one OpenRouter key variable")
+    key = os.environ.get(envs.pop(), "")
+    return KeySpendGuard(config.key_spend_cap_usd, lambda: openrouter_key_usage_usd(key))
+
+
 def _task_ids(config: RunConfig, limit: int | None = None) -> list[str]:
     """Task ids from the suite file, limited to the config's services."""
     services = {s.value for s in config.services}
@@ -91,6 +107,7 @@ def _execute(
         )
         for m in config.models
     }
+    key_guard = _key_guard(config)
     typer.echo(f"run {run_id}: {len(specs)} episodes, results in {store.run_dir}")
     status = asyncio.run(
         run_grid(
@@ -103,6 +120,7 @@ def _execute(
             quota=quota,
             checkpoint_every=checkpoint_every,
             on_result=typer.echo,
+            key_guard=key_guard,
         )
     )
     typer.echo("")
@@ -121,6 +139,11 @@ def _execute(
             )
         else:
             typer.echo(f"\npaused models {sorted(status.paused_models)}; --resume {run_id} later")
+    elif status.key_spend_stop:
+        typer.echo(
+            f"\nkey spend limit: stopped before the OpenRouter key could pass USD "
+            f"{config.key_spend_cap_usd:g} ({status.key_spend_stop}); partial results kept"
+        )
     elif status.budget_stop:
         typer.echo(f"\nspend cap reached; partial results in {store.run_dir}")
     else:

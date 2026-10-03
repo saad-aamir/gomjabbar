@@ -86,6 +86,9 @@ class RunConfig(BaseModel):
     concurrency: int = 1
     spend_cap_eur: float = 0
     usd_to_eur: float | None = None
+    # Absolute limit on the OpenRouter key's total spend in USD, across all runs (set by
+    # Saad). Checked against the provider's own usage figure before every episode. None = off.
+    key_spend_cap_usd: float | None = None
     keep_sandboxes: bool = False
 
     @model_validator(mode="after")

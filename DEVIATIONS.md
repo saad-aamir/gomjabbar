@@ -10,6 +10,30 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-03: easy dev tasks are exploratory, standard suite held out
+- **What the spec said:** SPEC 2.2 defines `dev.txt` (easy) and `full.txt` (standard); CLAUDE.md forbids the `full` suite before `PRE_REGISTRATION.md` is FINAL. Nothing said whether single standard tasks may be run earlier.
+- **What we did instead:** one line under Setup in `PRE_REGISTRATION.md`: the 20 easy dev tasks are exploratory, the standard suite is held out for the confirmatory run after FINAL. No standard task is run before then. No hypothesis or threshold was changed. The Agent line in the same Setup section now names temperature 1.0 and the empty-reply re-sampling (entries below).
+- **Why:** decided by Saad. Seeing standard results before freezing the hypotheses would weaken the pre-registration.
+- **Effect on results:** M1 and M2 numbers are exploratory only. Intervals on 10 tasks per service stay wide.
+
+## 2026-10-03: absolute spend limit on the OpenRouter key
+- **What the spec said:** `spend_cap_eur` limits one run (SPEC 5.5); nothing about the account.
+- **What we did instead:** new config field `key_spend_cap_usd` (4.5 in all configs, set by Saad). Before every episode the runner reads the key's total usage from OpenRouter (`GET /api/v1/key`, `usage` in USD) and stops cleanly if `concurrency` more average episodes (at least 0.05 USD each) could pass the limit. If the usage cannot be read after 3 tries it does not start the episode (fails closed). Paraphrase generation checks the same limit. Unit and integration tested.
+- **Why:** Saad: "never let total key spend pass $4.50". The per-run cap cannot see spend from earlier runs and probes.
+- **Effect on results:** none on scores; a run may stop early, partial results stay valid.
+
+## 2026-10-03: temperature 1.0 sent explicitly
+- **What the spec said:** `temperature: null`, the provider default (SPEC 5.3, 10); `PRE_REGISTRATION.md` (draft) said provider-default temperature.
+- **What we did instead:** `temperature: 1.0` in dev, full and local configs, SPEC 5.3 and 10 and the draft pre-registration Setup line updated. The code default stays `null`.
+- **Why:** decided by Saad. MCPMark sends `temperature: 1.0` on every call. The empty-reply investigation showed provider defaults differ: DeepInfra's default sampling for gpt-oss-120b is almost deterministic, CoreWeave's is not (`docs/notes/empty-replies.md`).
+- **Effect on results:** the M1 baseline (`runs/dev-20261003-033437`, provider default) is not comparable with later runs; it is kept for the record and replaced by a re-run under the new rules as the M1 baseline of record.
+
+## 2026-10-03: empty replies are re-sampled up to 3 times
+- **What the spec said:** a reply without tool calls is the final answer (SPEC 5.3), as in MCPMark's agent.
+- **What we did instead:** a reply with empty content, no tool calls and `finish_reason: stop` is not shown to the conversation; the identical request is sent again, at most 3 times per step. If the fourth reply is still empty it is the final answer, as before. Re-sampled replies count in tokens, cost and `llm_requests`, not in `steps`. Each empty reply is classified from its hidden output tokens (output tokens minus visible reasoning and content at 4 characters per token): 25 or more is a "dropped call", fewer is "stopped after reasoning". New EpisodeResult fields `empty_reply_resamples`, `empty_replies_dropped_call`, `empty_replies_stopped`; trace events carry `empty_reply` and `resampled`. The report card shows the empty-reply rate per model (empty replies over model replies, where model replies are steps plus re-sampled replies) and a sensitivity score "MCPMark rule": pass@1 and pass^k with every episode that needed a re-sample counted as failed. SPEC 5.3 updated.
+- **Why:** decided by Saad after the investigation in `docs/notes/empty-replies.md`: 21 of 100 M1 baseline episodes ended on such a reply, all failed, and on both CoreWeave and DeepInfra the model had announced a tool call that never arrived. The threshold of 25 hidden tokens sits in the gap seen in the M1 data (2 to 19 versus 32 to 50; normal tool-call replies have a median of 33).
+- **Effect on results:** higher pass rates than MCPMark's agent would get on the same model and stack; the "MCPMark rule" score shows how much. The classification is a heuristic (characters per token vary), so the two kinds are approximate.
+
 ## 2026-10-03: a rejected key (401) pauses the run; account pauses are not remembered for the day
 - **What the spec said:** SPEC 5.5 handles daily-quota 429s; the entry "out-of-credits answers pause the model like an exhausted quota" (below) made 402 and "Key limit exceeded" pause like a daily quota; any other API error ends the episode as `llm_error`.
 - **What we did instead:** an HTTP 401 (expired or invalid key) is classified like a 402: the model pauses, the episode in flight is not written, and the run prints "paused: the provider rejected the account (...). Fix the key or credit, then resume with --resume <run_id>". These account pauses (401, 402, key limit) are no longer stored as `exhausted` in `quota.json`; only a real daily quota is. Tested (unit and a full run that pauses on 401 and finishes on a same-day resume).
