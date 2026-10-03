@@ -1093,3 +1093,12 @@
 2026-10-03T09:45:31Z [7a50f9b6875bb902] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-rate_limit #0
 2026-10-03T09:46:29Z [4a6a05ed8bdd38ce] done passed=True claim=none stop=final_answer steps=14 152.774s
 2026-10-03T09:46:29Z [52e47c205526610f] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-rate_limit #0
+2026-10-03T09:46:51Z [52e47c205526610f] done passed=True claim=none stop=final_answer steps=14 21.401s
+2026-10-03T09:46:51Z [59f0826eb3ee281a] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-rpc_error #0
+2026-10-03T09:49:18Z [7a50f9b6875bb902] done passed=True claim=done stop=final_answer steps=29 226.14s
+2026-10-03T09:49:18Z [053a6365695d732e] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-rpc_error #0
+2026-10-03T09:49:30Z [053a6365695d732e] done passed=False claim=none stop=final_answer steps=5 12.142s
+2026-10-03T09:49:31Z [5c084131f00bf5f9] start openrouter/openai/gpt-oss-120b postgres/easy/lego/fix_data_inconsistencies fault fault-timeout #0
+2026-10-03T09:50:44Z [59f0826eb3ee281a] done passed=True claim=done stop=final_answer steps=17 232.274s
+2026-10-03T09:50:44Z [e1d53519a6c90234] start openrouter/openai/gpt-oss-20b postgres/easy/lego/fix_data_inconsistencies fault fault-timeout #0
+2026-10-03T09:50:48Z [5c084131f00bf5f9] done passed=False claim=none stop=final_answer steps=4 77.208s
