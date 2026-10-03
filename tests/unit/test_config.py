@@ -24,9 +24,19 @@ def minimal(**overrides) -> dict:
 
 
 def test_repo_configs_load():
-    for name in ["dev", "full", "local"]:
-        config = load_config(REPO / "configs" / f"{name}.yaml")
-        assert config.spend_cap_eur == 0
+    # dev.yaml has a spend cap set by Saad, and every OpenRouter model is pinned to a provider.
+    config = load_config(REPO / "configs" / "dev.yaml")
+    assert config.spend_cap_eur > 0
+    pinned = [m for m in config.models if m.name.startswith("openrouter/")]
+    assert pinned and all(m.provider for m in pinned)
+
+
+def test_paid_configs_without_a_cap_refuse_to_load():
+    # full.yaml and local.yaml use the same paid models but keep spend_cap_eur 0 until Saad
+    # sets a cap, so they must refuse to start (CLAUDE.md: never raise a spend cap yourself).
+    for name in ["full", "local"]:
+        with pytest.raises(ValueError, match="spend_cap_eur is 0"):
+            load_config(REPO / "configs" / f"{name}.yaml")
 
 
 def test_hash_is_stable_and_sensitive():

@@ -1,29 +1,28 @@
-# Development run for cloud sessions: 20 dev tasks (10 filesystem, 10 postgres), two free Groq models.
+# Development run for cloud sessions: 20 dev tasks (10 filesystem, 10 postgres), two gpt-oss models on OpenRouter.
 # Every field is explained in docs/SPEC.md section 10.
 run_name: dev
 suite: suites/dev.txt
 services: [filesystem, postgres]
 models:
-  - name: groq/openai/gpt-oss-20b               # free tier on Groq; the smaller model of the pair
-    api_key_env: PFS_GROQ_API_KEY
-    free_tier: true                             # costs nothing; limited by quota instead
-    rpm_limit: 30                               # check the limits page in your Groq console and adjust
-    rpd_limit: 1000
-    tpm_limit: 8000                             # tokens per minute on the Groq free tier (seen 2026-10-02)
-    tpd_limit: 200000                           # tokens per day, rolling (Groq 429 text, 2026-10-02)
-  - name: groq/openai/gpt-oss-120b              # same family, larger: tests whether capability changes attack success
-    api_key_env: PFS_GROQ_API_KEY
-    free_tier: true
-    rpm_limit: 30
-    rpd_limit: 1000
-    tpm_limit: 8000                             # tokens per minute on the Groq free tier (seen 2026-10-02)
-    tpd_limit: 200000                           # tokens per day, rolling (Groq 429 text, 2026-10-02)
-redteam_model:                                  # paraphrases and equivalence checks; separate daily quota from the agents
-  name: groq/llama-3.3-70b-versatile
-  api_key_env: PFS_GROQ_API_KEY
-  free_tier: true
-  rpm_limit: 30
-  rpd_limit: 1000
+  - name: openrouter/openai/gpt-oss-20b         # the smaller model of the pair, paid via OpenRouter
+    api_key_env: PFS_OPENROUTER_API_KEY
+    free_tier: false                            # paid per token; the run's spend_cap_eur limits it
+    provider: coreweave/fp4                     # pinned upstream, no fallbacks (docs/notes/openrouter.md)
+    price_usd_per_mtok: 0.13                    # fallback only: CoreWeave output price; OpenRouter reports real cost
+    rpm_limit: 60                               # our own ceiling; OpenRouter sets no request limit on paid models
+  - name: openrouter/openai/gpt-oss-120b        # same family, larger: tests whether capability changes attack success
+    api_key_env: PFS_OPENROUTER_API_KEY
+    free_tier: false
+    provider: coreweave/fp4
+    price_usd_per_mtok: 0.17                    # fallback only: CoreWeave output price
+    rpm_limit: 60
+redteam_model:                                  # paraphrases and equivalence checks (from M2)
+  name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  price_usd_per_mtok: 0.17
+  rpm_limit: 60
 temperature: null                        # null = provider default
 max_tokens: 32768                        # output cap per model call, as in MCPMark
 seed: 20261002
@@ -35,7 +34,7 @@ defenses: []                             # e.g. [pinning, sanitizer]
 max_steps: 40
 tool_timeout_s: 30
 episode_timeout_s: 900
-concurrency: 2                           # stay under 30 requests per minute per model
-spend_cap_eur: 0                         # 0 = free models only; any model without free_tier is refused
-usd_to_eur: null                         # only needed if you ever add a paid model
+concurrency: 2                           # one episode per model at a time (models interleave)
+spend_cap_eur: 5                         # set by Saad; the run stops before it would spend more
+usd_to_eur: 4.44                         # set by Saad; converts the provider's USD cost to euros
 keep_sandboxes: false
