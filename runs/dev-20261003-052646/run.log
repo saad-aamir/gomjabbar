@@ -54,3 +54,16 @@
 2026-10-03T06:17:28Z [ccd04b8aa6dd5428] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #2
 2026-10-03T06:17:28Z [a4f0a20381128aca] done passed=False claim=done stop=final_answer steps=10 29.667s
 2026-10-03T06:17:28Z [4f5c2b1d661573b3] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #3
+2026-10-03T06:17:54Z [ccd04b8aa6dd5428] done passed=False claim=none stop=final_answer steps=28 25.898s
+2026-10-03T06:17:54Z [c0d4d352166745ce] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #3
+2026-10-03T06:18:06Z [4f5c2b1d661573b3] done passed=True claim=done stop=final_answer steps=17 37.805s
+2026-10-03T06:18:06Z [6aad90e09dbf1b60] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase baseline orig #4
+2026-10-03T06:18:09Z [c0d4d352166745ce] done passed=True claim=done stop=final_answer steps=19 14.496s
+2026-10-03T06:18:09Z [90d7f8f602d955b5] start openrouter/openai/gpt-oss-20b filesystem/easy/file_context/uppercase baseline orig #4
+2026-10-03T06:18:21Z [90d7f8f602d955b5] done passed=False claim=done stop=final_answer steps=13 11.641s
+2026-10-03T06:18:21Z [f823b8485a162596] start openrouter/openai/gpt-oss-120b filesystem/easy/file_property/largest_rename baseline orig #0
+2026-10-03T06:18:36Z [6aad90e09dbf1b60] done passed=False claim=done stop=final_answer steps=10 29.291s
+2026-10-03T06:18:36Z [f931183eae4db46e] start openrouter/openai/gpt-oss-20b filesystem/easy/file_property/largest_rename baseline orig #0
+2026-10-03T06:18:38Z [f823b8485a162596] done passed=True claim=done stop=final_answer steps=7 16.777s
+2026-10-03T06:18:39Z [2b8a4248af2be09e] start openrouter/openai/gpt-oss-120b filesystem/easy/file_property/largest_rename baseline orig #1
+2026-10-03T06:18:41Z [f931183eae4db46e] done passed=True claim=done stop=final_answer steps=5 4.745s
