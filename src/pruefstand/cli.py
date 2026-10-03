@@ -1,6 +1,7 @@
 """Command line interface: doctor, pilot, estimate, run and report (SPEC 11).
 
-What: the `pruefstand` command, built with Typer.
+What: the `pruefstand` command, built with Typer: doctor, paraphrase, pilot, estimate, run,
+report.
 Why: every experiment step is one command, so runs are reproducible from the shell history
 and the cloud session can run them in the background with nohup.
 How: each command loads a config, builds the pieces (task loader, run store, quota manager,
@@ -98,6 +99,16 @@ def _execute(
     store.write_config(config)
     loader = MCPMarkTasks()
     tasks = {task_id: loader.load(task_id) for task_id in task_ids}
+    if Condition.PARAPHRASE in ([only] if only else config.conditions):
+        # Paraphrases are made once by `pruefstand paraphrase`, never during a run.
+        from pruefstand.redteam.paraphrase import ParaphraseCacheMissing, load_paraphrases
+
+        try:
+            for task in tasks.values():
+                load_paraphrases(task)
+        except ParaphraseCacheMissing as exc:
+            typer.echo(f"Refusing: {exc}", err=True)
+            raise typer.Exit(2) from exc
     specs = build_specs(config, run_id, task_ids, only)
     info = RunInfo(config=config, config_hash=config.config_hash(), git_commit=git_commit_id())
     quota = QuotaManager(store, config.models)
@@ -192,6 +203,50 @@ def run(
     if checkpoint_every is None and os.environ.get("CLAUDE_CODE_REMOTE") == "true":
         checkpoint_every = 25
     _execute(cfg, run_id, task_ids, only, checkpoint_every)
+
+
+@app.command()
+def paraphrase(
+    config: Path = typer.Option(..., help="config YAML (its redteam_model writes the texts)"),
+    samples: int = typer.Option(5, help="paraphrases to put in the review page"),
+) -> None:
+    """Generate and cache paraphrases for every suite task that has none yet (SPEC 5.6)."""
+    from pruefstand.redteam.paraphrase import (
+        cache_path,
+        generate_for_task,
+        samples_markdown,
+    )
+
+    cfg = load_config(config)
+    _require_preregistration(cfg)
+    if cfg.redteam_model is None:
+        typer.echo("the config has no redteam_model", err=True)
+        raise typer.Exit(2)
+    _quiet_litellm()
+    from pruefstand.agent.llm import LiteLLMChat
+
+    model = LiteLLMChat(cfg.redteam_model, cfg.temperature, None, cfg.usd_to_eur, cfg.max_tokens)
+    key_guard = _key_guard(cfg)
+    loader = MCPMarkTasks()
+    tasks = [loader.load(task_id) for task_id in _task_ids(cfg)]
+    total_eur = 0.0
+    for task in tasks:
+        if cache_path(task.id).exists():
+            typer.echo(f"cached   {task.id}")
+            continue
+        # The key's absolute limit: one task costs a few cents at most; reserve 0.05 USD.
+        if key_guard is not None and not key_guard.can_start(0.05, in_flight=1):
+            typer.echo(f"key spend limit reached ({key_guard.error or key_guard.last_usage}); stop")
+            raise typer.Exit(1)
+        log = asyncio.run(generate_for_task(task, model, cfg.redteam_model.name, cfg.paraphrases))
+        total_eur += log.cost_eur
+        typer.echo(
+            f"made     {task.id}: {len(log.accepted)}/{cfg.paraphrases} accepted, "
+            f"{len(log.rejected)} rejected, {len(log.dropped)} dropped, EUR {log.cost_eur:.4f}"
+        )
+    page = REPO_ROOT / "docs" / "notes" / "paraphrase-samples.md"
+    page.write_text(samples_markdown(tasks, samples), encoding="utf-8")
+    typer.echo(f"done: EUR {total_eur:.4f} this time; review page {page}")
 
 
 @app.command()

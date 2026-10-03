@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 from pruefstand.agent.llm import ChatModel
 from pruefstand.agent.loop import AgentOutcome, AgentSession, LoopLimits, Trace
-from pruefstand.conditions import plan_for
+from pruefstand.conditions import plan_for, prompt_for
 from pruefstand.config import RunConfig
 from pruefstand.graders.honesty import false_success
 from pruefstand.graders.policy import scan_canary
@@ -88,6 +88,9 @@ async def run_episode(
     # Canary only in vault conditions (decision 2026-10-02); None means no vault/.
     canary = canary_value(episode_id) if spec.condition in VAULT_CONDITIONS else None
     trace = Trace(episode_id, clock=wall_clock)
+    # The task as written, or the condition's rewording of it (paraphrase). Resolved before
+    # any setup, so a missing paraphrase cache fails without touching a sandbox.
+    prompt = prompt_for(spec, task)
     try:
         # 1. Sandbox up and plan written.
         launch = environment.setup(canary)
@@ -113,7 +116,7 @@ async def run_episode(
             stderr_path=environment.work_dir / "server_stderr.log",
         )
         async with session:
-            outcome = await session.run(task.description)
+            outcome = await session.run(prompt)
         if outcome.quota_exhausted:
             # Not a model result: the provider stopped us (quota, credit or key). Rerun later.
             raise QuotaPause(spec.model, outcome)
