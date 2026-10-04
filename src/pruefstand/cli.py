@@ -95,6 +95,12 @@ def _execute(
     _quiet_litellm()
     from pruefstand.agent.llm import LiteLLMChat
 
+    specs = build_specs(config, run_id, task_ids, only)
+    if config.payload_set == "holdout" and not specs:
+        # The held-out payloads are written by Saad after the pattern freeze; none yet.
+        # Checked before the run folder exists, so a refused run leaves nothing behind.
+        typer.echo("Refusing: payloads/holdout/ has no payloads for this run.", err=True)
+        raise typer.Exit(2)
     store = RunStore(RUNS_DIR / run_id)
     store.write_config(config)
     loader = MCPMarkTasks()
@@ -109,7 +115,6 @@ def _execute(
         except ParaphraseCacheMissing as exc:
             typer.echo(f"Refusing: {exc}", err=True)
             raise typer.Exit(2) from exc
-    specs = build_specs(config, run_id, task_ids, only)
     info = RunInfo(config=config, config_hash=config.config_hash(), git_commit=git_commit_id())
     quota = QuotaManager(store, config.models)
     clients = {

@@ -42,7 +42,7 @@ All four gaps are above 10 points, but for gpt-oss-120b the lower ends (2.0 and 
 
 **H2. Capability and poisoning.** Poison attack success is higher for gpt-oss-120b than for gpt-oss-20b.
 
-Dev evidence (M3): gpt-oss-120b 76.7 [70.0, 83.3], gpt-oss-20b 33.3 [23.3, 45.0]; per task, 120b minus 20b 43.3 [31.7, 53.3] points. The confound check (`docs/notes/confound-check-full.txt`) found most unsuccessful 20b poison episodes ignored the instruction (28 of 40) rather than tried and failed (3 of 40), so the gap is not mainly 20b being unable to carry the attack out; 24 of the 40 could not be classified for lack of a committed trace.
+Dev evidence (M3): gpt-oss-120b 76.7 [70.0, 83.3], gpt-oss-20b 33.3 [23.3, 45.0]; per task, 120b minus 20b 43.3 [31.7, 53.3] points. The confound check (`docs/notes/confound-check-full.txt`) found most unsuccessful 20b poison episodes ignored the instruction (28 of 40) rather than tried and failed (3 of 40), so the gap is not mainly 20b being unable to carry the attack out. The classes come from a keyword heuristic over the run's full traces.
 
 **H3. Procedural payloads.** The procedural poison payloads (shadow-audit, marker-fs, marker-pg) succeed more often than append-readfirst (per task: mean success over the procedural payloads that apply to it, minus append-readfirst).
 
