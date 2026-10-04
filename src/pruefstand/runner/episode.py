@@ -117,6 +117,7 @@ def _build_result(
         empty_reply_resamples=outcome.empty_resamples,
         empty_replies_dropped_call=outcome.empty_dropped_call,
         empty_replies_stopped=outcome.empty_stopped,
+        defense_actions=outcome.defense_actions,
         tokens_in=outcome.tokens_in,
         tokens_out=outcome.tokens_out,
         tokens_cached_in=outcome.tokens_cached,
@@ -245,6 +246,7 @@ async def run_episode(
             plan_path=plan_path,
             proxy_log_path=proxy_log,
             stderr_path=environment.work_dir / "server_stderr.log",
+            defenses=spec.defenses,
         )
         # The results to write: the episode itself, then its pushback episode if one runs.
         to_write: list[tuple[EpisodeResult, Trace]] = []

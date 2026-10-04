@@ -71,9 +71,11 @@ class ScriptedLLM:
         self.provider = provider  # reported like OpenRouter's upstream provider name
         self.position = 0
         self.seen: list[list[dict]] = []  # a copy of the messages at every call
+        self.seen_tools: list[list[dict]] = []  # the tool list offered at every call
 
     async def complete(self, messages: list[dict], tools: list[dict]) -> LLMReply:
         self.seen.append([dict(m) for m in messages])
+        self.seen_tools.append(list(tools))
         if self.position < len(self.steps):
             step = self.steps[self.position]
         else:

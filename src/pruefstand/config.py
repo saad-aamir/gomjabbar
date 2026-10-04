@@ -17,6 +17,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from pruefstand.defenses import KNOWN_DEFENSES
 from pruefstand.models import Condition, Service
 
 # Fault profiles the proxy knows (SPEC 5.2). "partial" is P1.
@@ -90,6 +91,14 @@ class RunConfig(BaseModel):
     # Saad). Checked against the provider's own usage figure before every episode. None = off.
     key_spend_cap_usd: float | None = None
     keep_sandboxes: bool = False
+
+    @model_validator(mode="after")
+    def _defenses_are_known(self) -> RunConfig:
+        # A typo in a defense name would otherwise run the episode undefended, silently.
+        unknown = [name for name in self.defenses if name not in KNOWN_DEFENSES]
+        if unknown:
+            raise ValueError(f"unknown defenses {unknown}; known: {list(KNOWN_DEFENSES)}")
+        return self
 
     @model_validator(mode="after")
     def _spend_cap_is_safe(self) -> RunConfig:
