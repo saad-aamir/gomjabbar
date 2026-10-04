@@ -5,7 +5,8 @@ merges the proxy's side log into the trace, grades the final state, and only the
 the result (SPEC 5.5).
 Why: this is the one place where the order "grade first, write after" is enforced. A
 GraderError propagates before anything is appended to results.jsonl, so no partial or
-default result can ever be written (CLAUDE.md hard rule).
+default result can ever be written (CLAUDE.md hard rule). The episode's trace is still saved
+to grader_errors/ first, so the failure can be debugged.
 How: the grid runner calls it once per spec with the task, an environment, a model client
 and the run store. If the model's daily quota runs out mid-episode it raises QuotaPause
 without writing anything, so the episode reruns after the reset.
@@ -25,6 +26,7 @@ from pruefstand.conditions import pushback as pushback_cond
 from pruefstand.config import RunConfig
 from pruefstand.graders.honesty import false_success, strict_pass
 from pruefstand.graders.policy import CanaryVerdict, attacker_goal_met, scan_canary
+from pruefstand.graders.state import GraderError
 from pruefstand.models import (
     VAULT_CONDITIONS,
     EpisodeResult,
@@ -177,6 +179,20 @@ async def _run_pushback(
     return result, pb_trace
 
 
+def _save_grader_error(store: RunStore, trace: Trace, current: Trace, exc: GraderError) -> None:
+    """Save the trace(s) of an episode whose grading raised GraderError, then log it.
+
+    `trace` is the episode's own trace. `current` is the session's trace at the moment of the
+    error: the pushback trace if the error came from re-grading after pushback, otherwise the
+    same object. Each gets an "error" event naming the grader failure. No result row is
+    written; the caller re-raises so the run stops (CLAUDE.md hard rule).
+    """
+    for item in {id(trace): trace, id(current): current}.values():
+        item.add("error", {"where": "grader", "error": str(exc)})
+        path = store.save_grader_error_trace(item.episode_id, item.events)
+        store.log(f"grader error, no result written; trace saved to {path}", item.episode_id)
+
+
 def merge_proxy_log(trace: Trace, store: RunStore, episode_id: str) -> None:
     """Append the proxy's side-channel log lines to the trace as proxy_mutation events."""
     path = store.proxy_log_path(episode_id)
@@ -239,26 +255,31 @@ async def run_episode(
                 raise QuotaPause(spec.model, outcome)
             merge_proxy_log(trace, store, episode_id)
 
-            # 3. Graders. A GraderError leaves this function before anything is written.
-            verdict = environment.grade()
-            canary_verdict = scan_canary(trace.events, canary)
-            goal = _attacker_goal(spec, trace.events, canary_verdict, environment)
-            result = _build_result(
-                spec, episode_id, outcome, verdict, canary_verdict, goal, info, started, clock
-            )
-            to_write.append((result, trace))
-
-            # 3b. Pushback (SPEC 6.7): if this baseline passed and claimed DONE, challenge it
-            # in the same session. Both rows are written together at the end, so a quota pause
-            # during pushback leaves neither and both rerun on --resume.
-            if pushback_cond.applies(config, spec) and pushback_cond.eligible(
-                outcome.final_claim, verdict.passed
-            ):
-                pb_result = await _run_pushback(
-                    spec, verdict, session, environment, info, clock, wall_clock, store
+            # 3. Graders. A GraderError leaves this function before any result is written; the
+            # trace is still saved (grader_errors/) so the failure can be debugged.
+            try:
+                verdict = environment.grade()
+                canary_verdict = scan_canary(trace.events, canary)
+                goal = _attacker_goal(spec, trace.events, canary_verdict, environment)
+                result = _build_result(
+                    spec, episode_id, outcome, verdict, canary_verdict, goal, info, started, clock
                 )
-                if pb_result is not None:
-                    to_write.append(pb_result)
+                to_write.append((result, trace))
+
+                # 3b. Pushback (SPEC 6.7): if this baseline passed and claimed DONE, challenge
+                # it in the same session. Both rows are written together at the end, so a quota
+                # pause during pushback leaves neither and both rerun on --resume.
+                if pushback_cond.applies(config, spec) and pushback_cond.eligible(
+                    outcome.final_claim, verdict.passed
+                ):
+                    pb_result = await _run_pushback(
+                        spec, verdict, session, environment, info, clock, wall_clock, store
+                    )
+                    if pb_result is not None:
+                        to_write.append(pb_result)
+            except GraderError as exc:
+                _save_grader_error(store, trace, session.trace, exc)
+                raise
 
         # 4. Write every result: its trace first, then the row (the row marks it as done).
         results = [result for result, _ in to_write]

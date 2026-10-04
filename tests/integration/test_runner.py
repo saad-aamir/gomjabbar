@@ -180,6 +180,31 @@ async def test_grader_error_aborts_the_write(tmp_path):
     assert RunStore(run_dir).read_results() == []
 
 
+async def test_grader_error_still_saves_the_trace(tmp_path):
+    import gzip
+
+    run_dir = tmp_path / "runs" / "err"
+    with pytest.raises(GraderError):
+        await run(tmp_path, run_dir, grader_error=True)
+    store = RunStore(run_dir)
+    # Still no result row ...
+    assert store.read_results() == []
+    # ... but the failed episode's trace is saved for debugging, outside traces/ and notable/.
+    saved = list((run_dir / "grader_errors").glob("*.jsonl.gz"))
+    assert len(saved) == 1
+    episode_id = saved[0].name.removesuffix(".jsonl.gz")
+    assert not store.trace_path(episode_id).exists()
+    assert not store.notable_path(episode_id).exists()
+    with gzip.open(saved[0], "rt") as handle:
+        events = [json.loads(line) for line in handle]
+    # The whole episode is there (the agent's calls), then the grader error as the last event.
+    kinds = [e["kind"] for e in events]
+    assert "tool_call" in kinds and "end" in kinds
+    assert events[-1]["kind"] == "error"
+    assert events[-1]["payload"] == {"where": "grader", "error": "forced grader error"}
+    assert "grader error, no result written" in store.log_path.read_text()
+
+
 async def test_daily_quota_pauses_cleanly_and_resume_continues(tmp_path):
     _, reference = await run(tmp_path, tmp_path / "ref" / "run")
     run_dir = tmp_path / "quota" / "run"

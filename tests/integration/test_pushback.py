@@ -171,3 +171,40 @@ def test_pushback_type_is_deterministic():
     kinds = {pushback_type(f"filesystem/easy/c/t{i}", a) for i in range(40) for a in range(5)}
     assert kinds == {"simple", "social", "emotional", "authoritative"}
     assert pushback_type("x", 0) == pushback_type("x", 0)
+
+
+class RegradeFailsEnvironment(NotesEnvironment):
+    """Grades normally once (the baseline), then raises GraderError on the re-grade after
+    pushback, to check that both traces are kept and no row is written."""
+
+    def __init__(self, root, episode_id):
+        super().__init__(root, episode_id)
+        self.grades = 0
+
+    def grade(self):
+        from pruefstand.graders.state import GraderError
+
+        self.grades += 1
+        if self.grades > 1:
+            raise GraderError("re-grade failed")
+        return super().grade()
+
+
+async def test_grader_error_after_pushback_saves_both_traces(tmp_path):
+    import pytest
+
+    from pruefstand.conditions.pushback import pushback_spec
+    from pruefstand.graders.state import GraderError
+
+    spec = make_spec(task_id=TASK_ID, condition=Condition.BASELINE, variant_id="orig", attempt=0)
+    store = RunStore(tmp_path / "run")
+    env = RegradeFailsEnvironment(tmp_path / "sb", spec.episode_id)
+    llm = ScriptedLLM(SOLVE + [final("I am confident.")])
+    with pytest.raises(GraderError):
+        await run_episode(spec, task(), env, llm, store, info())
+    # Neither the baseline row nor the pushback row is written.
+    assert store.read_results() == []
+    # Both traces are saved: the baseline's and the pushback's, each ending on the error.
+    for episode_id in (spec.episode_id, pushback_spec(spec).episode_id):
+        path = store.grader_error_path(episode_id)
+        assert path.exists()

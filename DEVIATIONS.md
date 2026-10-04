@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-04: a grader error still saves the episode's trace
+- **What the spec said:** a grader or judge error aborts the write of that result (SPEC 5.4, CLAUDE.md); SPEC 4 lists what a run commits (config, results, log, report, notable traces).
+- **What we did instead:** when grading raises `GraderError`, the episode runner first saves the episode's trace, with a final `error` event naming the failure, gzipped to `runs/<run_id>/grader_errors/<episode_id>.jsonl.gz`, logs the path in `run.log`, then re-raises. If the error came from the re-grade after pushback, the pushback episode's trace is saved too. Still no result row is written, and the run still stops. `grader_errors/` is added to the folders checkpoints commit.
+- **Why:** asked by Saad: without the trace there was nothing to debug a grader failure with, and on a cloud VM the gitignored `traces/` folder is lost when the VM is reclaimed. A separate folder (not `traces/` or `notable/`) keeps a later rerun's trace from being mistaken for the failed one.
+- **Effect on results:** none; results.jsonl is unchanged.
+
 ## 2026-10-03: step 5 conditions and the box 2, 3 and 6 tests are written by Saad
 - **What the spec said:** M3 steps 3 to 5 build the policy success-check tests, the poison, inject and vault_control conditions, and their tests; nothing says who writes them.
 - **What we did instead:** the session's safety classifier repeatedly blocked the model from writing the attack-condition modules (`conditions/poison.py`, `conditions/inject.py`, `conditions/vault_control.py`) and the policy success-check tests, so Saad writes those by hand: the three condition modules, `tests/unit/test_policy_checks.py` (acceptance boxes 2, 3 and 6: canary false-positive, each payload's `success_check`, and strict_passed false on a leak), and any strict-pass helper in `graders/honesty.py`. Everything the conditions depend on is in place: the proxy mutators, payload loading, the policy grader's `attacker_goal_met`, the read/write classifier, and the runner wiring that plants the vault, builds the plan, grades the attacker's goal and writes attack and pushback rows. The variant-id to payload mapping the conditions should use lives in `payloads.py` (`attack_variant`, `attack_payload`) so the modules stay small.
