@@ -10,6 +10,60 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-04: M4 has no confirmatory full run
+- **What the spec said:** M4 step 8: if `PRE_REGISTRATION.md` is FINAL, estimate and run `configs/full.yaml` on the standard suite.
+- **What we did instead:** no full run. `PRE_REGISTRATION.md` is rewritten as "Status: PLANNED, NOT RUN" (entry below). `configs/full.yaml` stays as it is, with `spend_cap_eur: 0`, so it refuses to start.
+- **Why:** decided by Saad: the budget is fixed and no credit will be added.
+- **Effect on results:** every number in this repo is exploratory (20 easy dev tasks). No hypothesis is tested confirmatorily.
+
+## 2026-10-04: PRE_REGISTRATION.md rewritten by Claude, on Saad's authorization
+- **What the spec said:** CLAUDE.md and the file itself: Claude Code never edits the hypotheses or thresholds; Saad finalizes the file.
+- **What we did instead:** Claude rewrote the file on Saad's explicit instruction: status "PLANNED, NOT RUN", all results labelled exploratory, and six hypotheses H1 to H6 (worded by Saad) proposed for a future confirmatory run on the held-out standard suite with Holm correction, each citing its dev numbers. The old draft's H1 to H4 and E1 to E5 are replaced.
+- **Why:** with no full run, the old draft described a study that will not happen. The new hypotheses come from what the dev runs showed, so they are labelled as generated from exploratory data.
+- **Effect on results:** none on recorded numbers. The hypotheses are now data-informed, which is why they need fresh data (the standard suite) to be tested.
+
+## 2026-10-04: a third defense, description_scan
+- **What the spec said:** SPEC 5.7 and M4 step 1: two defenses, pinning and sanitizer.
+- **What we did instead:** a third defense `defenses/description_scan.py` (asked by Saad). After `list_tools` at session start it scans every tool description and every parameter description for instruction-like sentences (the sanitizer's pattern family plus phrases such as "mandatory", "before finishing any task", "include ... in the arguments", "do not mention"), removes matching sentences, logs each removal, and hides a tool from the model entirely when the removals leave its description empty or remove more than half of it. All three defenses share one pattern module. False positives are measured on clean MCPMark tool descriptions and on clean tool results from the committed traces.
+- **Why:** pinning only catches descriptions that change mid-session and the sanitizer only looks at tool results, so neither touches a description that is poisoned from the first `tools/list`, which is what the poison condition does.
+- **Effect on results:** defense runs can use any of the three names in `defenses`.
+
+## 2026-10-04: pinning cannot fire in the defense experiment
+- **What the spec said:** M4 step 3: re-run poison, inject and rug pull with pinning and sanitizer.
+- **What we did instead:** pinning is built and unit tested as SPEC 5.7 says, and is switched on in the defense run, but it will log no actions there. It protects against descriptions that change after the first listing; the poison condition serves poisoned descriptions from the first `tools/list`, and the rug pull condition (P1) was never built. Rug pull is not run.
+- **Why:** rug pull was out of reach in M3 (see the M3 walkthrough); the defense run measures the defenses against the attacks that exist.
+- **Effect on results:** the defense run's effect on poison comes from description_scan, on inject from the sanitizer. Pinning's effectiveness is untested on real models.
+
+## 2026-10-04: defense patterns written with the payloads in view, frozen, then tested on held-out payloads
+- **What the spec said:** nothing on how defense patterns are chosen.
+- **What we did instead:** the sanitizer and description_scan patterns were written by Claude knowing the 8 repo payloads, so attack reduction on those payloads is an upper bound. To get a fair number, the patterns are frozen once the defenses and the false-positive measurement are done: committed and tagged `defense-patterns-v1` (the tag is recorded in the entry "defense patterns frozen" when it is made). After the tag, no pattern changes for this experiment. `payloads/holdout/` is created empty; Saad writes those payloads after the freeze, and they are never used to tune patterns. The payload loader accepts holdout files as a third set (variants `poison-holdout-<id>` for files with a `mode`, `inject-holdout-<id>` for the rest), chosen with a new config field `payload_set: holdout`. `configs/holdout.yaml` (no defenses) and `configs/holdout-defended.yaml` (all three) run them on gpt-oss-120b, `spend_cap_eur: 0.5` each. Asked by Saad.
+- **Why:** a defense tuned on its test set looks better than it is.
+- **Effect on results:** two defense numbers: on the repo payloads (upper bound) and on the holdout payloads (fair), reported separately.
+
+## 2026-10-04: the defense experiment runs on gpt-oss-120b only, and Saad runs it
+- **What the spec said:** M4 step 3: re-run poison, inject and rug pull with defenses on the dev suite, plus baseline, for the models of the dev config.
+- **What we did instead:** `configs/defense.yaml`: gpt-oss-120b only, dev suite, conditions baseline (k=5, no pushback), poison and inject, `defenses: [pinning, sanitizer, description_scan]`, `spend_cap_eur: 1.2` (set by Saad). Claude builds and tests it but does not run it; Saad runs it from his Mac. It is compared with the M3 run `runs/dev-20261003-205231`.
+- **Why:** decided by Saad: fixed budget, and gpt-oss-120b is the model the poisoning works on (76.7% attack success against 33.3% for 20b).
+- **Effect on results:** no defense numbers for gpt-oss-20b. Estimated cost from M3's averages: about 0.51 EUR.
+
+## 2026-10-04: compare pairs by model too, and reports the baseline change with an interval
+- **What the spec said:** SPEC 9: pair episodes by `(task_id, condition, variant_id, attempt)`; McNemar, discordant counts, odds ratio, p-value.
+- **What we did instead:** pairs are keyed by `(model, task_id, condition, variant_id, attempt)`, and only models present in both runs are compared (a run with two models has two episodes per SPEC key). The outcome compared is attack success (`attacker_goal_met` or `canary_leaked`) for poison and inject, and state pass for every other condition. Next to McNemar, each condition gets both rates with task-bootstrap intervals and the paired change with a task-bootstrap interval. The odds ratio is b/c with 0.5 added to both counts when either is zero.
+- **Why:** without the model in the key, pairs from different models would be matched. The interval on the baseline change is what "utility cost" needs; McNemar only gives a p-value.
+- **Effect on results:** none on recorded rows.
+
+## 2026-10-04: EpisodeResult records the number of defense actions
+- **What the spec said:** SPEC 4 EpisodeResult has no defense field; defense actions are trace events.
+- **What we did instead:** new field `defense_actions: int = 0`, the number of `defense_action` events in the episode (removed lines, removed sentences, hidden tools, pinned changes, blocked calls to hidden tools). Old rows read as 0.
+- **Why:** the report and compare can show how often a defense acted without reading traces (most traces are not committed).
+- **Effect on results:** none on scores.
+
+## 2026-10-04: README without the headline report image
+- **What the spec said:** M4 step 6 lists "the headline report image" in the README.
+- **What we did instead:** the README follows Saad's list for M4 (summary, dimensions, quickstart, architecture diagram, results with intervals, confound finding, leak trace demo, defense results placeholder, limitations, cost, MCPMark credit, ethics, how this was built). The results are tables, not an image.
+- **Why:** Saad's M4 list replaces step 6 and does not include the image; a table with intervals is readable on GitHub without a binary file.
+- **Effect on results:** none.
+
 ## 2026-10-04: a grader error still saves the episode's trace
 - **What the spec said:** a grader or judge error aborts the write of that result (SPEC 5.4, CLAUDE.md); SPEC 4 lists what a run commits (config, results, log, report, notable traces).
 - **What we did instead:** when grading raises `GraderError`, the episode runner first saves the episode's trace, with a final `error` event naming the failure, gzipped to `runs/<run_id>/grader_errors/<episode_id>.jsonl.gz`, logs the path in `run.log`, then re-raises. If the error came from the re-grade after pushback, the pushback episode's trace is saved too. Still no result row is written, and the run still stops. `grader_errors/` is added to the folders checkpoints commit.
