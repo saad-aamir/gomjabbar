@@ -17,6 +17,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from pruefstand.analysis.metrics import RESPONSE_TYPES
 from pruefstand.config import load_config
 from pruefstand.paths import REPO_ROOT
 from pruefstand.report.card import CONDITIONS, Card, build_card
@@ -94,6 +95,30 @@ def build_page(run_dir: Path) -> str:
                 )
             )
 
+    # Section 4: attack success per payload (one dot per model, per payload label).
+    attack_charts = []
+    for scope in scopes:
+        labels = sorted({p for _, pts in series(scope, "attack_by_payload") for p in pts})
+        if labels:
+            attack_charts.append(
+                (
+                    scope,
+                    dot_interval_chart(
+                        labels, series(scope, "attack_by_payload"), f"Attack success, {scope}"
+                    ),
+                )
+            )
+    # Whether any attack ran, and whether any canary leaked (SPEC: say so plainly if none did).
+    attack_episodes = sum(c.attack_episodes for c in cards if c.scope == "all")
+    canary_leaks = sum(c.canary_leaks for c in cards if c.scope == "all")
+    # Pushback response mix per challenge type, per model (scope "all").
+    pushback_tables = [
+        (_short(c.model), c.pushback_by_type)
+        for m in models
+        for c in cards
+        if c.model == m and c.scope == "all" and c.pushback_by_type
+    ]
+
     def row(r):
         trace = store.notable_path(r.episode_id)
         return {
@@ -140,6 +165,11 @@ def build_page(run_dir: Path) -> str:
         cell=_cell,
         condition_charts=condition_charts,
         fault_charts=fault_charts,
+        attack_charts=attack_charts,
+        attack_episodes=attack_episodes,
+        canary_leaks=canary_leaks,
+        pushback_tables=pushback_tables,
+        response_types=RESPONSE_TYPES,
         transport=transport,
         failing=failing,
     )

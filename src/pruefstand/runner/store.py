@@ -59,6 +59,9 @@ class RunStore:
     def notable_path(self, episode_id: str) -> Path:
         return self.run_dir / "notable" / f"{episode_id}.jsonl.gz"
 
+    def grader_error_path(self, episode_id: str) -> Path:
+        return self.run_dir / "grader_errors" / f"{episode_id}.jsonl.gz"
+
     # ---- config ------------------------------------------------------------------------
 
     def write_config(self, config: RunConfig) -> None:
@@ -132,6 +135,22 @@ class RunStore:
         with open(source, "rb") as src, open(target, "wb") as raw:
             with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as dst:
                 dst.write(src.read())
+        return target
+
+    def save_grader_error_trace(self, episode_id: str, events: list[TraceEvent]) -> Path:
+        """Save the trace of an episode whose grading failed, gzipped, for debugging.
+
+        It goes to grader_errors/, not traces/ or notable/: no result row exists for the
+        episode (a grader error must never produce one), and a later rerun's own trace must
+        not be mistaken for this one. The folder is committed by checkpoints so the evidence
+        survives a reclaimed cloud VM.
+        """
+        target = self.grader_error_path(episode_id)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        data = "".join(event.model_dump_json() + "\n" for event in events).encode("utf-8")
+        with open(target, "wb") as raw:
+            with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as dst:
+                dst.write(data)
         return target
 
     # ---- run log -----------------------------------------------------------------------

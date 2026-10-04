@@ -15,7 +15,15 @@ from pruefstand.paths import REPO_ROOT
 from pruefstand.runner.store import RunStore
 
 # Files and folders of a run that are committed; traces/ and proxy/ stay local.
-COMMITTED = ["config.yaml", "results.jsonl", "run.log", "quota.json", "report.html", "notable"]
+COMMITTED = [
+    "config.yaml",
+    "results.jsonl",
+    "run.log",
+    "quota.json",
+    "report.html",
+    "notable",
+    "grader_errors",  # traces of episodes whose grading failed (no result row), for debugging
+]
 
 
 def _git(*args: str) -> subprocess.CompletedProcess:

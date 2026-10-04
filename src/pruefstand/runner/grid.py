@@ -35,12 +35,16 @@ def build_specs(
 ) -> list[EpisodeSpec]:
     """Every EpisodeSpec of the run, in the deterministic order of SPEC 5.5."""
     conditions = [only] if only else list(config.conditions)
+    # Pushback continues baseline sessions, so running "only pushback" means running the
+    # baseline episodes; their pushback rows are written next to them (SPEC 6.7).
+    if only == Condition.PUSHBACK:
+        conditions = [Condition.BASELINE]
     specs = [
         spec
         for model in config.models
         for task_id in task_ids
         for condition in conditions
-        # Pushback is derived from baseline episodes (M3), not expanded here.
+        # Pushback is derived from baseline episodes by the episode runner, not expanded.
         if condition != Condition.PUSHBACK
         for spec in expand(condition, config, run_id, task_id, model.name)
     ]
@@ -145,7 +149,7 @@ async def run_grid(
                 episode_id,
             )
             try:
-                result = await run_episode(
+                results = await run_episode(
                     spec,
                     tasks[spec.task_id],
                     environment_for(tasks[spec.task_id], episode_id),
@@ -171,7 +175,12 @@ async def run_grid(
                 status.paused_models.add(spec.model)
                 continue
             quota.count_episode(spec.model)
-            budget.add(result.cost_eur)
+            # run_episode returns the episode's result first, then its pushback result if one
+            # ran. Only the first counts toward the grid total (pushback has no grid spec);
+            # every result's cost counts against the budget.
+            result = results[0]
+            for extra in results:
+                budget.add(extra.cost_eur)
             status.done += 1
             status.ran += 1
             since_checkpoint += 1
@@ -180,6 +189,12 @@ async def run_grid(
                 f"stop={result.stop_reason} steps={result.steps} {result.duration_s}s"
             )
             store.log(line, episode_id)
+            for extra in results[1:]:
+                pb = extra.pushback
+                store.log(
+                    f"pushback {pb.pushback_type} response={pb.response_type} flipped={pb.flipped}",
+                    extra.episode_id,
+                )
             if on_result:
                 on_result(
                     f"[{status.done}/{status.total}] {spec.model} {spec.task_id} "

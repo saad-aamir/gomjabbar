@@ -31,6 +31,11 @@ class EpisodeEnvironment(Protocol):
 
     def teardown(self) -> None: ...
 
+    def workspace(self) -> Path | None:
+        """The directory a file_exists success_check looks in, or None if the service has no
+        workspace (postgres). Used by the policy grader before teardown."""
+        ...
+
 
 class FilesystemEnvironment:
     """MCPMark filesystem task in a fresh sandbox."""
@@ -51,6 +56,9 @@ class FilesystemEnvironment:
 
     def teardown(self) -> None:
         self.sandbox.destroy()
+
+    def workspace(self) -> Path | None:
+        return self.sandbox.workspace
 
 
 class PostgresEnvironment:
@@ -74,6 +82,10 @@ class PostgresEnvironment:
 
     def teardown(self) -> None:
         self.sandbox.destroy()
+
+    def workspace(self) -> Path | None:
+        # Postgres has no files; its file_exists checks never apply (payloads use sql_matches).
+        return None
 
 
 def environment_for(task: Task, episode_id: str) -> EpisodeEnvironment:

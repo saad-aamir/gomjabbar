@@ -160,6 +160,17 @@ Mostly, not entirely. Three `standard` verifiers execute statements:
 
 None of the `easy` postgres verifiers writes.
 
+### Re-check for M3 step 5 (2026-10-03)
+
+All 40 filesystem and all 31 postgres `verify.py` files were scanned again: for file writes (`write_text`, `open(..., "w"/"a")`, `unlink`, `rename`, `mkdir`, `shutil`, `os.remove`) and for SQL that changes state (`INSERT`, `UPDATE`, `DELETE`, `CREATE`, `DROP`, `ALTER`, `SET ROLE`, `rollback`, `commit`).
+
+- Filesystem: no hit. Every filesystem verifier is read-only, so pushback may run it twice.
+- Postgres: eight files match. Four are false positives: the words appear only in messages or in `has_table_privilege(..., 'INSERT')` checks (`easy/lego/basic_security_setup`, `easy/sports/create_performance_indexes`, `standard/security/user_permission_audit`, `standard/sports/participant_report_optimization`). The other four write:
+  - `lego/consistency_enforcement`, `lego/database_security_policies`, `security/rls_business_access`: as recorded above.
+  - **`lego/transactional_inventory_transfer` (new):** calls the agent's `transfer_parts(...)` function, which inserts into `inventory_transfer_log` and moves inventory, then `rollback()`s after each test. `autocommit` is off, so nothing persists if the verifier finishes, but a crash or timeout between call and rollback would leave a write. It is treated like `consistency_enforcement`.
+
+Consequence: these four standard tasks are excluded from pushback (`conditions/pushback.py`, `VERIFY_WRITES`). None is in the dev suite. No state snapshot is needed because no included task's verifier writes.
+
 ### Decision for M2 and later (Saad, 2026-10-02)
 
 Postgres tasks whose verifiers write, including `security/rls_business_access` (the `CREATE ROLE` one), `lego/consistency_enforcement` and `lego/database_security_policies`:

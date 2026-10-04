@@ -28,7 +28,7 @@ max_tokens: 32768                        # output cap per model call, as in MCPM
 seed: 20261002
 k: 5                                     # baseline attempts per task
 paraphrases: 3                           # paraphrase variants per task
-fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
+fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit, partial]  # partial (P1) added for the confirmatory run (M3 step 2); see DEVIATIONS.md
 conditions: [baseline, paraphrase, fault, poison, inject, vault_control, pushback]
 defenses: []                             # e.g. [pinning, sanitizer]
 max_steps: 100                           # model calls per episode, as MCPMark's MAX_TURNS

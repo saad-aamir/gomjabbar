@@ -10,16 +10,29 @@ returns the text the agent is given (the task as written, unless the condition r
 
 from __future__ import annotations
 
-from pruefstand.conditions import baseline, fault, paraphrase
+from pruefstand.conditions import (
+    baseline,
+    fault,
+    inject,
+    paraphrase,
+    poison,
+    pushback,
+    vault_control,
+)
 from pruefstand.config import RunConfig
 from pruefstand.models import Condition, EpisodeSpec, Task
 from pruefstand.proxy.plan import ProxyPlan
 
-# Conditions implemented so far. Poison, inject, rugpull and vault_control arrive in M3.
+# Conditions implemented so far. Poison, inject and vault_control are added in M3 step 5.
+# Pushback has no episodes of its own: it is derived from baseline by the episode runner.
 IMPLEMENTED = {
     Condition.BASELINE: baseline,
     Condition.PARAPHRASE: paraphrase,
     Condition.FAULT: fault,
+    Condition.PUSHBACK: pushback,
+    Condition.POISON: poison,  # M3
+    Condition.INJECT: inject,  # M3
+    Condition.VAULT_CONTROL: vault_control,  # M3
 }
 
 

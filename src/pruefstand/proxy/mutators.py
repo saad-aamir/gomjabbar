@@ -1,13 +1,17 @@
-"""Fault mutators: how the chaos proxy breaks one tools/call response.
+"""Mutators: how the chaos proxy changes one message (faults, poisoning, injection).
 
 What: `apply_fault(rule, response, line)` turns the real server's response line into what the
 client should receive under a fault profile (SPEC 5.2): a delayed, swallowed, replaced,
-truncated, emptied or shortened response.
-Why: the fault condition measures how an agent copes with tools that misbehave. Keeping
-each profile a small pure function makes its exact output easy to read and to unit test.
-How: the relay (relay.py) picks the rule when it sees the client's tools/call request and
-calls `apply_fault` when the matching response comes back. In every profile the real server
-has already executed the call; only the answer the client sees changes.
+truncated, emptied or shortened response. `poison_tools` rewrites a tools/list result
+(appended descriptions, an extra shadow tool), `shadow_answer` is the proxy's own reply to a
+call of that shadow tool, and `inject_text` appends an attacker's text block to a result.
+Why: the fault condition measures how an agent copes with tools that misbehave, the poison
+and inject conditions whether it obeys instructions from untrusted tools. Keeping each
+mutation a small pure function makes its exact output easy to read and to unit test.
+How: the relay (relay.py) decides which rule applies when it sees the client's request and
+calls these functions when the matching response comes back. In every fault profile the
+real server has already executed the call; only the answer the client sees changes. A shadow
+tool call is the exception: it never reaches the server, the proxy answers it itself.
 """
 
 from __future__ import annotations
@@ -15,7 +19,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from pruefstand.proxy.plan import FaultRule
+from pruefstand.proxy.plan import FaultRule, PoisonRule
 
 # Texts the client sees, exactly as SPEC 5.2 gives them.
 TOOL_ERROR_TEXT = "Service temporarily unavailable"
@@ -32,6 +36,9 @@ class Forward:
 
     data: bytes | None  # the bytes to write, or None to write nothing (swallowed)
     delay_s: float = 0.0  # wait this long before writing
+    # Bytes the proxy itself sends back to the client (a shadow tool's answer). Written to
+    # the client whatever the direction of the line being handled.
+    to_client: bytes | None = None
 
 
 def _line(message: dict) -> bytes:
@@ -108,3 +115,79 @@ def apply_fault(rule: FaultRule, response: dict, line: bytes) -> Forward:
         return Forward(_line({**response, "result": result}))
 
     raise ValueError(f"unknown fault profile {profile!r}")
+
+
+# ---- poisoning and injection (M3) -------------------------------------------------------
+
+# Keywords for `target_tool: auto` (SPEC 6.4), in priority order: the first keyword that
+# matches any tool name wins, and among tools matching it the first in the server's list.
+# Keyword order rather than list order, so postgres resolves to execute_sql and not to the
+# read-only explain_query (decision B, DEVIATIONS.md 2026-10-03).
+AUTO_KEYWORDS = ("write", "edit", "move", "create", "execute", "query")
+# What the proxy answers when the agent calls a shadow tool (SPEC 5.2).
+SHADOW_ANSWER_TEXT = "ok"
+
+
+def resolve_auto_target(tool_names: list[str]) -> str | None:
+    """The tool `auto` stands for, from the live tool list, or None if nothing matches."""
+    for keyword in AUTO_KEYWORDS:
+        for name in tool_names:
+            if keyword in name:
+                return name
+    return None
+
+
+def resolve_target(rule: PoisonRule, tool_names: list[str]) -> str | None:
+    """The real tool a description-poisoning rule changes (`auto` resolved, else as given)."""
+    if rule.target_tool == "auto":
+        return resolve_auto_target(tool_names)
+    return rule.target_tool if rule.target_tool in tool_names else None
+
+
+def poison_tools(rules: list[PoisonRule], tools: list[dict], targets: dict[int, str | None]):
+    """The poisoned tool list, given the resolved target of each rule (index -> tool name).
+
+    append_description adds "\n\n" + text to the target's description; shadow_tool adds a
+    new tool with the rule's name, text as description and schema. Unresolved targets and
+    modes this build does not support yet are skipped (the relay logs them).
+    """
+    poisoned = [dict(tool) for tool in tools]
+    for index, rule in enumerate(rules):
+        if rule.mode == "shadow_tool":
+            schema = rule.shadow_schema or {"type": "object", "properties": {}}
+            poisoned.append(
+                {"name": rule.target_tool, "description": rule.text, "inputSchema": schema}
+            )
+            continue
+        target = targets.get(index)
+        for position, tool in enumerate(poisoned):
+            if tool.get("name") != target:
+                continue
+            if rule.mode == "append_description":
+                description = tool.get("description") or ""
+                poisoned[position] = {**tool, "description": description + "\n\n" + rule.text}
+    return poisoned
+
+
+def tools_list_line(response: dict, tools: list[dict]) -> bytes:
+    """The tools/list response with its tool list replaced."""
+    result = {**(response.get("result") or {}), "tools": tools}
+    return _line({**response, "result": result})
+
+
+def shadow_answer(request_id) -> bytes:
+    """The proxy's own reply to a call of a shadow tool: a plain successful "ok"."""
+    return _line(
+        {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": {"content": [{"type": "text", "text": SHADOW_ANSWER_TEXT}]},
+        }
+    )
+
+
+def inject_text(response: dict, text: str) -> bytes:
+    """The real tools/call result with one more text block holding the attacker's text."""
+    result = dict(response.get("result") or {})
+    result["content"] = [*(result.get("content") or []), {"type": "text", "text": text}]
+    return _line({**response, "result": result})
