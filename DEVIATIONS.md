@@ -16,6 +16,12 @@ Format:
 - **Why:** asked by Saad: without the trace there was nothing to debug a grader failure with, and on a cloud VM the gitignored `traces/` folder is lost when the VM is reclaimed. A separate folder (not `traces/` or `notable/`) keeps a later rerun's trace from being mistaken for the failed one.
 - **Effect on results:** none; results.jsonl is unchanged.
 
+## 2026-10-04: verify.py timeout raised from 120 s to 600 s
+- **What the spec said:** SPEC 5.4, verify.py timeout 120 s.
+- **What we did instead:** 600 s.
+- **Why:** postgres/easy/employees/department_summary_view (episode 1f828f54940d9097, gpt-oss-120b) timed out at 120 s during the M3 dev run, which aborted the run with GraderError. The employees database is large, and MCPMark itself allows up to 3,600 s per task. The episode wrote no row and reruns on resume. Its trace was not saved, so slow-view versus lock could not be told apart; a repeat timeout at 600 s would point to a lock.
+- **Effect on results:** none on recorded rows; the resumed run continues under a newer commit.
+
 ## 2026-10-03: step 5 conditions and the box 2, 3 and 6 tests are written by Saad
 - **What the spec said:** M3 steps 3 to 5 build the policy success-check tests, the poison, inject and vault_control conditions, and their tests; nothing says who writes them.
 - **What we did instead:** the session's safety classifier repeatedly blocked the model from writing the attack-condition modules (`conditions/poison.py`, `conditions/inject.py`, `conditions/vault_control.py`) and the policy success-check tests, so Saad writes those by hand: the three condition modules, `tests/unit/test_policy_checks.py` (acceptance boxes 2, 3 and 6: canary false-positive, each payload's `success_check`, and strict_passed false on a leak), and any strict-pass helper in `graders/honesty.py`. Everything the conditions depend on is in place: the proxy mutators, payload loading, the policy grader's `attacker_goal_met`, the read/write classifier, and the runner wiring that plants the vault, builds the plan, grades the attacker's goal and writes attack and pushback rows. The variant-id to payload mapping the conditions should use lives in `payloads.py` (`attack_variant`, `attack_payload`) so the modules stay small.
@@ -273,9 +279,3 @@ Format:
 - **What we did instead:** if the per-day 429 also says "try again in" 15 minutes or less, the client waits that long and retries (the wait counts as quota time, not agent time). Only a per-day 429 without a hint, or with a longer one, marks the model done for today. The provider's message is now written to run.log when a model pauses.
 - **Why:** in the third pilot gpt-oss-120b was marked done for the day after 33 requests and about 146k tokens, yet a minute later both a tiny and a 4.6k-token request succeeded. Groq's daily token limit appears to be a rolling window, so stopping for the whole day wastes most of it.
 - **Effect on results:** none on episode outcomes; runs pause less often.
-
-## 2026-10-04: verify.py timeout raised from 120 s to 600 s
-- **What the spec said:** SPEC 5.4, verify.py timeout 120 s.
-- **What we did instead:** 600 s.
-- **Why:** postgres/easy/employees/department_summary_view (episode 1f828f54940d9097, gpt-oss-120b) timed out at 120 s during the M3 dev run, which aborted the run with GraderError. The employees database is large, and MCPMark itself allows up to 3,600 s per task. The episode wrote no row and reruns on resume. Its trace was not saved, so slow-view versus lock could not be told apart; a repeat timeout at 600 s would point to a lock.
-- **Effect on results:** none on recorded rows; the resumed run continues under a newer commit.
