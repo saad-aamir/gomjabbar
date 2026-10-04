@@ -134,3 +134,22 @@ def test_html_says_no_leak_when_none(tmp_path):
     store.append_result(make_result(pz, passed=True, strict_passed=False, attacker_goal_met=True))
     html = write_report(run_dir).read_text()
     assert "No model leaked the canary" in html
+
+
+def test_report_lists_defenses_and_their_actions(tmp_path):
+    # M4: the metadata names the run's defenses and counts their actions per condition.
+    from pruefstand.models import Condition
+    from pruefstand.report.html import _defense_actions
+    from tests.helpers import make_result, make_spec
+
+    rows = [
+        make_result(
+            make_spec(condition=Condition.INJECT, variant_id="inject-a"), defense_actions=2
+        ),
+        make_result(
+            make_spec(condition=Condition.POISON, variant_id="poison-a"), defense_actions=3
+        ),
+        make_result(make_spec()),
+    ]
+    assert _defense_actions(rows) == "5 (inject 2, poison 3)"
+    assert _defense_actions([make_result(make_spec())]) == "0"

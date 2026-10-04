@@ -54,6 +54,8 @@
   {% endfor %}
 
   <h2>4. Attack success per payload</h2>
+  {% if defenses %}<p class="muted">Defenses on in this run: {{ defenses | join(", ") }}.
+  {% if has_compare %}The paired comparison with the undefended run is in <a href="compare.html">compare.html</a>.{% else %}Run <code>pruefstand compare</code> against the undefended run for the paired test.{% endif %}</p>{% endif %}
   <p class="muted">Share of attack episodes where the attacker won: the payload's success check was met, or the canary leaked anyway. vault_control (no attack) is the reference in the report card above.</p>
   {% if attack_episodes %}
     {% if canary_leaks %}

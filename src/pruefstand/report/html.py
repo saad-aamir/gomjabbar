@@ -2,8 +2,8 @@
 
 What: `write_report(run_dir)` reads a run's results and config and writes
 `runs/<run_id>/report.html` with the report card (section 1), pass rate per condition
-(2), fault recovery per fault profile (3), failing episodes with trace links (5) and run
-metadata (6). Section 4 (attacks) arrives in M3.
+(2), fault recovery per fault profile (3), attack success per payload (4) and pushback (4b),
+failing episodes with trace links (5) and run metadata (6), including the defenses (M4).
 Why: the report is how results are read and shared; it must work without network access,
 so styles and charts are inline.
 How: report/card.py computes the numbers, report/svg.py draws the charts, and a Jinja2
@@ -146,6 +146,9 @@ def build_page(run_dir: Path) -> str:
         ("model versions", ", ".join(sorted({r.model_version for r in results})) or "-"),
         ("providers", ", ".join(sorted({r.provider for r in results if r.provider})) or "-"),
         ("MCPMark commit", commit_file.read_text().strip() if commit_file.exists() else "-"),
+        # Host-side defenses (M4) and how often they acted, per condition.
+        ("defenses", ", ".join(config.defenses) or "none"),
+        ("defense actions", _defense_actions(results)),
         ("temperature", str(config.temperature)),
         ("seed", str(config.seed)),
         ("generated", datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")),
@@ -172,7 +175,22 @@ def build_page(run_dir: Path) -> str:
         response_types=RESPONSE_TYPES,
         transport=transport,
         failing=failing,
+        defenses=list(config.defenses),
+        has_compare=(store.run_dir / "compare.html").exists(),
     )
+
+
+def _defense_actions(results) -> str:
+    """Total defense actions and their split by condition, e.g. "12 (inject 7, poison 5)"."""
+    by_condition: dict[str, int] = {}
+    for r in results:
+        if r.defense_actions:
+            name = r.spec.condition.value
+            by_condition[name] = by_condition.get(name, 0) + r.defense_actions
+    if not by_condition:
+        return "0"
+    split = ", ".join(f"{name} {n}" for name, n in sorted(by_condition.items()))
+    return f"{sum(by_condition.values())} ({split})"
 
 
 def write_report(run_dir: Path) -> Path:
