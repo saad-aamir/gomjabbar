@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-04: defense patterns frozen at defense-patterns-v1
+- **What the spec said:** nothing; the freeze was asked by Saad (entry "defense patterns written with the payloads in view" below).
+- **What we did instead:** the patterns are frozen at commit `91a7f673c37db1aa374e989fb304f80e98a0e2e1`, tagged `defense-patterns-v1`. `src/pruefstand/defenses/patterns.py` at that commit has sha256 `2c623a34a07214fd8622bdfad10d1874f754d0cee40839759e796888881ad79e`; `tests/unit/test_pattern_freeze.py` checks that hash, so any later edit fails CI. The cloud session's git proxy refused to push the tag (branch pushes work), so Saad pushes it from his Mac: `git tag -a defense-patterns-v1 91a7f67 -m "..." && git push origin defense-patterns-v1`. The sentence splitting and hiding rules in `description_scan.py` and the line rule in `sanitizer.py` are frozen with them in spirit: they are not changed for this experiment.
+- **Why:** so the holdout payloads, written after this point, measure the defenses as they were before anyone saw those payloads.
+- **Effect on results:** none on recorded rows.
+
 ## 2026-10-04: M4 has no confirmatory full run
 - **What the spec said:** M4 step 8: if `PRE_REGISTRATION.md` is FINAL, estimate and run `configs/full.yaml` on the standard suite.
 - **What we did instead:** no full run. `PRE_REGISTRATION.md` is rewritten as "Status: PLANNED, NOT RUN" (entry below). `configs/full.yaml` stays as it is, with `spend_cap_eur: 0`, so it refuses to start.
