@@ -22,7 +22,7 @@ from pathlib import Path
 from pruefstand.models import Service, Task
 
 # verify.py timeout (SPEC 5.4; MCPMark itself uses 300 s).
-VERIFY_TIMEOUT_S = 120
+VERIFY_TIMEOUT_S = 600
 # How much of the verifier's output is kept in the result row.
 STDOUT_TAIL_CHARS = 2000
 # Signs in stderr that the verifier could not run at all (a broken environment), as opposed
