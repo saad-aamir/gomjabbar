@@ -9,6 +9,12 @@ means a typo in a payload fails before any episode runs, not halfway through a p
 How: conditions/poison.py and conditions/inject.py call `load_payloads` to expand episodes
 and build proxy plans; runner/episode.py calls `payload_for_variant` to find the success
 check of an attack episode; conditions/pushback.py calls `load_pushback`.
+
+Holdout payloads (M4): payloads/holdout/ holds payloads Saad writes after the defense
+patterns were frozen, so they test the defenses fairly. One folder holds both kinds: a file
+with a `mode` is a poisoning payload, one without is an injection payload. A run uses them
+instead of the standard folders when its config says `payload_set: holdout`; their variant
+ids carry "holdout-" (poison-holdout-<id>, inject-holdout-<id>).
 """
 
 from __future__ import annotations
@@ -23,9 +29,12 @@ from pydantic import BaseModel, Field, model_validator
 from pruefstand.models import Condition, Service
 from pruefstand.paths import REPO_ROOT
 
-# Where the payload files live (SPEC 3). poisoning/ and injection/ are loaded; files in
-# other folders (extra/, drafts/) are not.
+# Where the payload files live (SPEC 3). poisoning/ and injection/ are loaded, and holdout/
+# when a run asks for it; files in other folders (extra/, drafts/) are not.
 PAYLOAD_ROOT = REPO_ROOT / "payloads"
+# Folder of the held-out payloads, and the marker their variant ids carry.
+HOLDOUT_FOLDER = "holdout"
+HOLDOUT_TAG = "holdout-"
 # Folder name for each attack kind.
 PayloadKind = Literal["poisoning", "injection"]
 # The four pushback types, in the order of payloads/pushback.yaml; md5 % 4 indexes this.
@@ -67,6 +76,7 @@ class Payload(BaseModel):
     text: str
     shadow_schema: dict | None = None
     success_check: SuccessCheck
+    holdout: bool = False  # True for files from payloads/holdout/
 
     @model_validator(mode="after")
     def _poisoning_fields(self) -> Payload:
@@ -102,26 +112,64 @@ def _load_folder(kind: PayloadKind, root: Path) -> tuple[Payload, ...]:
             payloads.append(Payload(kind=kind, **_read_yaml(path)))
         except ValueError as exc:  # pydantic's ValidationError is a ValueError
             raise PayloadError(f"{path}: {exc}") from exc
-    ids = [p.id for p in payloads]
-    if len(ids) != len(set(ids)):
-        raise PayloadError(f"{folder}: duplicate payload ids {sorted(ids)}")
+    _check_ids(folder, payloads)
+    # A standard id starting with "holdout-" would make its variant id ambiguous.
+    for payload in payloads:
+        if payload.id.startswith(HOLDOUT_TAG):
+            raise PayloadError(f"{folder}: id {payload.id!r} must not start with {HOLDOUT_TAG!r}")
     return tuple(sorted(payloads, key=lambda p: p.id))
 
 
+@cache
+def _load_holdout(root: Path) -> tuple[Payload, ...]:
+    """Every held-out payload, both kinds: a file with a mode is poisoning, else injection."""
+    folder = root / HOLDOUT_FOLDER
+    payloads = []
+    for path in sorted(folder.glob("*.yaml")):
+        data = _read_yaml(path)
+        kind: PayloadKind = "poisoning" if data.get("mode") is not None else "injection"
+        try:
+            payloads.append(Payload(kind=kind, holdout=True, **data))
+        except ValueError as exc:
+            raise PayloadError(f"{path}: {exc}") from exc
+    # Ids are unique across the whole folder, so one id names one file whatever its kind.
+    _check_ids(folder, payloads)
+    return tuple(sorted(payloads, key=lambda p: p.id))
+
+
+def _check_ids(folder: Path, payloads: list[Payload]) -> None:
+    """Refuse duplicate ids in one folder."""
+    ids = [p.id for p in payloads]
+    if len(ids) != len(set(ids)):
+        raise PayloadError(f"{folder}: duplicate payload ids {sorted(ids)}")
+
+
 def load_payloads(
-    kind: PayloadKind, service: Service | None = None, root: Path = PAYLOAD_ROOT
+    kind: PayloadKind,
+    service: Service | None = None,
+    root: Path = PAYLOAD_ROOT,
+    holdout: bool = False,
 ) -> list[Payload]:
-    """The payloads of one kind, optionally only those that apply to a service."""
-    payloads = _load_folder(kind, root)
+    """The payloads of one kind, optionally only those that apply to a service.
+
+    With `holdout=True` they come from payloads/holdout/ instead of the kind's own folder.
+    """
+    if holdout:
+        payloads = tuple(p for p in _load_holdout(root) if p.kind == kind)
+    else:
+        payloads = _load_folder(kind, root)
     return [p for p in payloads if service is None or p.applies_to(service)]
 
 
-def payload_by_id(kind: PayloadKind, payload_id: str, root: Path = PAYLOAD_ROOT) -> Payload:
+def payload_by_id(
+    kind: PayloadKind, payload_id: str, root: Path = PAYLOAD_ROOT, holdout: bool = False
+) -> Payload:
     """One payload by id; a missing id is a PayloadError (the spec named a deleted file)."""
-    for payload in _load_folder(kind, root):
+    for payload in load_payloads(kind, root=root, holdout=holdout):
         if payload.id == payload_id:
             return payload
-    raise PayloadError(f"no {kind} payload with id {payload_id!r} in {root / kind}")
+    folder = root / (HOLDOUT_FOLDER if holdout else kind)
+    raise PayloadError(f"no {kind} payload with id {payload_id!r} in {folder}")
 
 
 def load_pushback(root: Path = PAYLOAD_ROOT) -> dict[str, str]:
@@ -144,8 +192,10 @@ ATTACK_FOLDER: dict[Condition, PayloadKind] = {
 
 
 def attack_variant(condition: Condition, payload: Payload) -> str:
-    """The variant id of an attack episode, e.g. "poison-shadow-audit"."""
-    return ATTACK_PREFIX[condition] + payload.id
+    """The variant id of an attack episode, e.g. "poison-shadow-audit" or, for a held-out
+    payload, "poison-holdout-<id>"."""
+    tag = HOLDOUT_TAG if payload.holdout else ""
+    return ATTACK_PREFIX[condition] + tag + payload.id
 
 
 def attack_payload(
@@ -155,6 +205,10 @@ def attack_payload(
     non-attack condition, so the runner can call it for any episode)."""
     if condition not in ATTACK_PREFIX:
         return None
-    return payload_by_id(
-        ATTACK_FOLDER[condition], variant_id.removeprefix(ATTACK_PREFIX[condition]), root
-    )
+    payload_id = variant_id.removeprefix(ATTACK_PREFIX[condition])
+    # "holdout-<id>" names a held-out payload (standard ids may not start with "holdout-").
+    if payload_id.startswith(HOLDOUT_TAG):
+        return payload_by_id(
+            ATTACK_FOLDER[condition], payload_id.removeprefix(HOLDOUT_TAG), root, holdout=True
+        )
+    return payload_by_id(ATTACK_FOLDER[condition], payload_id, root)

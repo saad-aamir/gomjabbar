@@ -25,7 +25,9 @@ def expand(config: RunConfig, run_id: str, task_id: str, model: str) -> list[Epi
     service = SERVICE_OF[task_id.split("/")[0]]
     # One episode per poisoning payload that applies to this service.
     specs = []
-    for payload in load_payloads("poisoning", service):
+    # The standard payload folder, or payloads/holdout/ when the config asks for it (M4).
+    holdout = config.payload_set == "holdout"
+    for payload in load_payloads("poisoning", service, holdout=holdout):
         variant = attack_variant(Condition.POISON, payload)  # e.g. "poison-shadow-audit"
         specs.append(
             EpisodeSpec(

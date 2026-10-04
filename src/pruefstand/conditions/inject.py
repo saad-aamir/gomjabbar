@@ -22,7 +22,9 @@ NTH_CALL = 1  # the payload rides on the first tool result (SPEC 6.5)
 def expand(config: RunConfig, run_id: str, task_id: str, model: str) -> list[EpisodeSpec]:
     service = SERVICE_OF[task_id.split("/")[0]]
     specs = []
-    for payload in load_payloads("injection", service):
+    # The standard payload folder, or payloads/holdout/ when the config asks for it (M4).
+    holdout = config.payload_set == "holdout"
+    for payload in load_payloads("injection", service, holdout=holdout):
         variant = attack_variant(Condition.INJECT, payload)  # e.g. "inject-system-override"
         specs.append(
             EpisodeSpec(

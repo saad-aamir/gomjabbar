@@ -79,6 +79,9 @@ class RunConfig(BaseModel):
     fault_profiles: list[FaultProfile] = Field(default_factory=list)
     conditions: list[Condition]
     defenses: list[str] = Field(default_factory=list)
+    # Which attack payloads poison and inject use: the standard folders, or payloads/holdout/
+    # (written after the defense patterns were frozen; DEVIATIONS.md, 2026-10-04).
+    payload_set: Literal["standard", "holdout"] = "standard"
     # MCPMark's defaults: MAX_TURNS = 100 model calls (src/agents/mcpmark_agent.py:47) and
     # --timeout 3600 s per task (pipeline.py). Matched since 2026-10-03 (DEVIATIONS.md).
     max_steps: int = 100
@@ -122,6 +125,10 @@ class RunConfig(BaseModel):
     def config_hash(self) -> str:
         """sha1 of the resolved config as canonical JSON. Same settings, same hash."""
         data = self.model_dump(mode="json")
+        # payload_set was added in M4; leaving its default out keeps the hash of every
+        # earlier config (and of the rows already recorded with it) unchanged.
+        if data.get("payload_set") == "standard":
+            del data["payload_set"]
         canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.sha1(canonical.encode("utf-8")).hexdigest()
 
