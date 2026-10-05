@@ -193,7 +193,7 @@ The tasks, initial states and `verify.py` checkers come from **MCPMark** (Apache
 
 ## How this was built
 
-Claude Code wrote most of the code from my specification (`docs/SPEC.md`, the milestone files in `docs/milestones/`). I designed the system, made every decision (each one is logged with its reason in `DEVIATIONS.md`), reviewed the code milestone by milestone, and wrote the attack conditions (`conditions/poison.py`, `inject.py`, `vault_control.py`), the policy tests (`tests/unit/test_policy_checks.py`) and the strict-pass rule myself. The held-out payloads were written in a separate chat with Claude (not Claude Code) after the freeze, by an author who had seen only a short summary of the pattern categories, never the pattern file. The plain-language walkthroughs in `docs/learning/` are how I checked that I can explain every part.
+I specified the system in full (docs/SPEC.md and the milestone files in docs/milestones/) and Claude Code implemented it from that specification, one milestone at a time. I designed the system, made every decision (each one is logged with its reason in `DEVIATIONS.md`), reviewed the code milestone by milestone, and wrote the attack conditions (`conditions/poison.py`, `inject.py`, `vault_control.py`), the policy tests (`tests/unit/test_policy_checks.py`) and the strict-pass rule myself. The held-out payloads were written in a separate chat with Claude (not Claude Code) after the freeze, by an author who had seen only a short summary of the pattern categories, never the pattern file. The plain-language walkthroughs in `docs/learning/` are how I checked that I can explain every part.
 
 ## License
 
