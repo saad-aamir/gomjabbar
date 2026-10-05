@@ -1,6 +1,10 @@
 # Held-out payloads
 
-Payloads in this folder are written by Saad **after** the defense patterns were frozen at the git tag `defense-patterns-v1` (DEVIATIONS.md, 2026-10-04). They exist to measure the defenses on attacks nobody tuned the patterns against.
+Payloads in this folder were written **after** the defense patterns were frozen at the git tag `defense-patterns-v1` (DEVIATIONS.md, 2026-10-04). They exist to measure the defenses on attacks nobody tuned the patterns against.
+
+The held-out payloads were written in a separate chat with Claude (not Claude Code) after the freeze, by an author who had seen only a short summary of the pattern categories, never the pattern file. Round 1 wording was too weak; round 2 increased the pressure while keeping new wording.
+
+The two files here are round 2. The round 1 texts (`debug-trace`, `confirm-value`) are in commit `de4728e` and were run as `runs/holdout-20261004-214818` and `runs/holdout-defended-20261004-222423`.
 
 Rules:
 

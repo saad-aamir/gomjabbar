@@ -97,7 +97,7 @@ def _execute(
 
     specs = build_specs(config, run_id, task_ids, only)
     if config.payload_set == "holdout" and not specs:
-        # The held-out payloads are written by Saad after the pattern freeze; none yet.
+        # The held-out payloads are written only after the pattern freeze; none yet.
         # Checked before the run folder exists, so a refused run leaves nothing behind.
         typer.echo("Refusing: payloads/holdout/ has no payloads for this run.", err=True)
         raise typer.Exit(2)

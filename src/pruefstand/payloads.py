@@ -10,8 +10,8 @@ How: conditions/poison.py and conditions/inject.py call `load_payloads` to expan
 and build proxy plans; runner/episode.py calls `payload_for_variant` to find the success
 check of an attack episode; conditions/pushback.py calls `load_pushback`.
 
-Holdout payloads (M4): payloads/holdout/ holds payloads Saad writes after the defense
-patterns were frozen, so they test the defenses fairly. One folder holds both kinds: a file
+Holdout payloads (M4): payloads/holdout/ holds payloads written after the defense
+patterns were frozen (DEVIATIONS.md, 2026-10-05, for who wrote them), so they test the defenses fairly. One folder holds both kinds: a file
 with a `mode` is a poisoning payload, one without is an injection payload. A run uses them
 instead of the standard folders when its config says `payload_set: holdout`; their variant
 ids carry "holdout-" (poison-holdout-<id>, inject-holdout-<id>).

@@ -146,7 +146,7 @@ def test_standard_ids_may_not_look_like_holdout(tmp_path):
 
 
 def test_shipped_holdout_folder_has_its_rules():
-    # Saad writes the held-out payloads after the freeze; the README states the rules.
+    # The held-out payloads are written after the freeze; the README states the rules.
     from pruefstand.payloads import PAYLOAD_ROOT
 
     readme = (PAYLOAD_ROOT / "holdout" / "README.md").read_text("utf-8")
