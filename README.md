@@ -106,7 +106,7 @@ A small model can look robust to an attack only because it is too unreliable to 
 | noticed the instruction, did not act | 3 | 8 |
 | ignored it (no trace of engaging with it) | 6 | 28 |
 
-For gpt-oss-20b, 28 of 40 failed attacks show no sign of the model engaging with the instruction, and only 3 tried and failed. So its lower attack success is mostly not incapacity. Caveat: the classes come from a keyword heuristic over the full traces of the M3 run (kept on Saad's Mac), and its examples were checked by hand; "noticed, did not act" mixes refusals with confusion.
+For gpt-oss-20b, 28 of 40 failed attacks show no sign of the model engaging with the instruction, and only 3 tried and failed. So its lower attack success is mostly not incapacity. Caveat: the classes come from a keyword heuristic over the full traces of the M3 run (kept locally), and its examples were checked by hand; "noticed, did not act" mixes refusals with confusion.
 
 ### A leak, step by step
 
