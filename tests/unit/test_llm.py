@@ -1,6 +1,6 @@
 """Tests for the retry decisions in agent/llm.py (no API calls)."""
 
-from pruefstand.agent.llm import classify_error
+from gomjabbar.agent.llm import classify_error
 
 
 class FakeAPIError(Exception):
@@ -91,8 +91,8 @@ def test_client_raises_non_daily_pause_on_401(monkeypatch):
     import litellm
     import pytest
 
-    from pruefstand.agent.llm import LiteLLMChat, QuotaExhausted
-    from pruefstand.config import ModelConfig
+    from gomjabbar.agent.llm import LiteLLMChat, QuotaExhausted
+    from gomjabbar.config import ModelConfig
 
     async def rejected(**kwargs):
         raise FakeAPIError("No auth credentials found", 401)
@@ -143,8 +143,8 @@ def run_client(monkeypatch, model_fields: dict, cost: float | None):
 
     import litellm
 
-    from pruefstand.agent.llm import LiteLLMChat
-    from pruefstand.config import ModelConfig
+    from gomjabbar.agent.llm import LiteLLMChat
+    from gomjabbar.config import ModelConfig
 
     sent: dict = {}
 
@@ -213,9 +213,9 @@ def run_with_failures(monkeypatch, failures: int):
 
     import litellm
 
-    from pruefstand.agent import llm as llm_module
-    from pruefstand.agent.llm import LiteLLMChat
-    from pruefstand.config import ModelConfig
+    from gomjabbar.agent import llm as llm_module
+    from gomjabbar.agent.llm import LiteLLMChat
+    from gomjabbar.config import ModelConfig
 
     calls = {"n": 0}
 
@@ -243,7 +243,7 @@ def test_parse_retries_are_counted(monkeypatch):
 def test_fourth_parse_failure_is_llm_error(monkeypatch):
     import pytest
 
-    from pruefstand.agent.llm import LLMError
+    from gomjabbar.agent.llm import LLMError
 
     with pytest.raises(LLMError, match="parse failure after 3 retries") as info:
         run_with_failures(monkeypatch, failures=4)

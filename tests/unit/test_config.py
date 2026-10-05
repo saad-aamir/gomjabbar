@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.config import RunConfig, load_config
+from gomjabbar.config import RunConfig, load_config
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -70,7 +70,7 @@ def test_key_env_must_be_prefixed():
 
 
 def test_provider_pin_only_for_openrouter():
-    from pruefstand.config import ModelConfig
+    from gomjabbar.config import ModelConfig
 
     ModelConfig(name="openrouter/openai/gpt-oss-20b", provider="coreweave/fp4")
     with pytest.raises(ValueError, match="openrouter"):

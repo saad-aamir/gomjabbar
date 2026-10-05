@@ -2,11 +2,11 @@
 
 ## What was built
 
-Prüfstand can now take an MCPMark filesystem task, copy its initial state into a fresh sandbox, start the official filesystem MCP server behind a byte-faithful proxy, and let a model solve the task through its own agent loop. The final state is graded by MCPMark's own `verify.py`, and the result row (state pass, strict pass, honesty, tokens, cost, provider, config hash, git commit) is written only after grading succeeded. A runner expands a config into a deterministic list of episodes, resumes after a crash by skipping finished episode ids, throttles itself to provider limits, stops before a spend cap, and commits results to git in checkpoints. The analysis computes pass@1 and pass^k with 95% intervals by resampling tasks, and the CLI offers `doctor`, `pilot`, `estimate`, `run` and a terminal `report`. The M1 baseline ran 10 filesystem tasks x 5 attempts x 2 models (gpt-oss-20b and gpt-oss-120b on OpenRouter, pinned to CoreWeave).
+Gom Jabbar can now take an MCPMark filesystem task, copy its initial state into a fresh sandbox, start the official filesystem MCP server behind a byte-faithful proxy, and let a model solve the task through its own agent loop. The final state is graded by MCPMark's own `verify.py`, and the result row (state pass, strict pass, honesty, tokens, cost, provider, config hash, git commit) is written only after grading succeeded. A runner expands a config into a deterministic list of episodes, resumes after a crash by skipping finished episode ids, throttles itself to provider limits, stops before a spend cap, and commits results to git in checkpoints. The analysis computes pass@1 and pass^k with 95% intervals by resampling tasks, and the CLI offers `doctor`, `pilot`, `estimate`, `run` and a terminal `report`. The M1 baseline ran 10 filesystem tasks x 5 attempts x 2 models (gpt-oss-20b and gpt-oss-120b on OpenRouter, pinned to CoreWeave).
 
 ## File map
 
-Source (`src/pruefstand/`):
+Source (`src/gomjabbar/`):
 
 - `models.py`: Pydantic data contracts (Task, EpisodeSpec with its deterministic id, TraceEvent, EpisodeResult).
 - `config.py`: RunConfig and ModelConfig, YAML loading, config hash, spend-cap safety checks.

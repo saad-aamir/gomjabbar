@@ -2,7 +2,7 @@
 
 ## What was built
 
-Three host-side defenses now sit in the agent loop: pinning (freeze tool definitions after the first listing), a sanitizer (drop instruction-like lines from tool results) and a description scan (drop instruction-like sentences from tool descriptions, and hide a tool that is mostly instructions). On clean text they removed nothing (0 removals on the real servers' 47 descriptions and on the 6,515 clean tool results in the M3 run's full traces), and in the defense run they took gpt-oss-120b's attack success from 76.7% to 0% for poison and from 16.2% to 0% for inject, while baseline pass@1 went from 87% to 84% (p = 0.55). Their patterns were frozen at the tag `defense-patterns-v1` (a test checks the file's hash) before any held-out payload existed; on held-out payloads, round 2's poison fell from 90% to 0% (p < 0.0001), while round 1 was too weak to land at all. `pruefstand compare` pairs two runs episode by episode and reports both rates, the paired change and McNemar's test per condition and per payload. A CI regression gate pins the outcome of every condition and payload, and the README, architecture guide and rewritten pre-registration (PLANNED, NOT RUN, H1 to H6 with their dev numbers) make the repo ready to read from the outside.
+Three host-side defenses now sit in the agent loop: pinning (freeze tool definitions after the first listing), a sanitizer (drop instruction-like lines from tool results) and a description scan (drop instruction-like sentences from tool descriptions, and hide a tool that is mostly instructions). On clean text they removed nothing (0 removals on the real servers' 47 descriptions and on the 6,515 clean tool results in the M3 run's full traces), and in the defense run they took gpt-oss-120b's attack success from 76.7% to 0% for poison and from 16.2% to 0% for inject, while baseline pass@1 went from 87% to 84% (p = 0.55). Their patterns were frozen at the tag `defense-patterns-v1` (a test checks the file's hash) before any held-out payload existed; on held-out payloads, round 2's poison fell from 90% to 0% (p < 0.0001), while round 1 was too weak to land at all. `gomjabbar compare` pairs two runs episode by episode and reports both rates, the paired change and McNemar's test per condition and per payload. A CI regression gate pins the outcome of every condition and payload, and the README, architecture guide and rewritten pre-registration (PLANNED, NOT RUN, H1 to H6 with their dev numbers) make the repo ready to read from the outside.
 
 ## Who wrote what
 
@@ -35,7 +35,7 @@ The action counts were checked without full traces: the frozen patterns, the rea
 
 ## File map
 
-Source (`src/pruefstand/`):
+Source (`src/gomjabbar/`):
 
 - `defenses/patterns.py`: the shared, frozen regular expressions (instruction family, plus description-only phrases).
 - `defenses/sanitizer.py`: line filter for tool results, with a visible "[removed by sanitizer]" marker.

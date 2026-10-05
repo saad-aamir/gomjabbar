@@ -2,7 +2,7 @@
 
 import pytest
 
-from pruefstand.graders.calls import classify_call, split_statements, sql_reads, sql_texts
+from gomjabbar.graders.calls import classify_call, split_statements, sql_reads, sql_texts
 
 
 @pytest.mark.parametrize(

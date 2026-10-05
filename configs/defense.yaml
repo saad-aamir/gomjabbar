@@ -1,5 +1,5 @@
 # M4 defense experiment: gpt-oss-120b on the 20 dev tasks, all three defenses on.
-# Paired with the M3 run runs/dev-20261003-205231 by `pruefstand compare` (DEVIATIONS.md, 2026-10-04).
+# Paired with the M3 run runs/dev-20261003-205231 by `gomjabbar compare` (DEVIATIONS.md, 2026-10-04).
 # Every field is explained in docs/SPEC.md section 10.
 run_name: defense
 suite: suites/dev.txt
@@ -25,7 +25,7 @@ k: 5                                     # baseline attempts per task
 paraphrases: 3                           # paraphrase variants per task
 fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
 conditions: [baseline, poison, inject]        # baseline k=5 measures the utility cost; no pushback
-defenses: [pinning, sanitizer, description_scan]  # host-side defenses (SPEC 5.7, src/pruefstand/defenses/)
+defenses: [pinning, sanitizer, description_scan]  # host-side defenses (SPEC 5.7, src/gomjabbar/defenses/)
 max_steps: 100                           # model calls per episode, as MCPMark's MAX_TURNS
 tool_timeout_s: 30
 episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's --timeout default

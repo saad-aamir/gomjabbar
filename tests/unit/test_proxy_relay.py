@@ -7,8 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from pruefstand.proxy.plan import ProxyPlan
-from pruefstand.proxy.relay import Relay, SideLog
+from gomjabbar.proxy.plan import ProxyPlan
+from gomjabbar.proxy.relay import Relay, SideLog
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -89,7 +89,7 @@ def test_proxy_process_is_byte_identical_end_to_end(tmp_path):
         [
             sys.executable,
             "-m",
-            "pruefstand.proxy",
+            "gomjabbar.proxy",
             "--",
             sys.executable,
             str(FIXTURES / "echo_server.py"),

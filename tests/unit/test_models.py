@@ -1,6 +1,6 @@
 """Tests for the data contracts in models.py."""
 
-from pruefstand.models import VAULT_CONDITIONS, Condition
+from gomjabbar.models import VAULT_CONDITIONS, Condition
 from tests.helpers import make_result, make_spec
 
 

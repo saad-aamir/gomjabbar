@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from pruefstand.proxy.plan import FaultRule, ProxyPlan
-from pruefstand.proxy.relay import Relay, SideLog
+from gomjabbar.proxy.plan import FaultRule, ProxyPlan
+from gomjabbar.proxy.relay import Relay, SideLog
 
 
 def request(request_id: int, tool: str) -> bytes:

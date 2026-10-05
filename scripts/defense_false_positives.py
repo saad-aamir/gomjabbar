@@ -10,7 +10,7 @@ How:
         --out docs/notes/defense-false-positives-m3-full.md
 With no run folder it reads every folder under runs/. With no --out it prints the report.
 Full traces in `traces/` are used where they exist, otherwise the committed `notable/` and
-`grader_errors/` traces. See src/pruefstand/defenses/false_positives.py for the rules.
+`grader_errors/` traces. See src/gomjabbar/defenses/false_positives.py for the rules.
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from pruefstand.defenses.false_positives import measure, render_markdown
-from pruefstand.paths import REPO_ROOT
+from gomjabbar.defenses.false_positives import measure, render_markdown
+from gomjabbar.paths import REPO_ROOT
 
 
 def main(argv: list[str] | None = None) -> int:

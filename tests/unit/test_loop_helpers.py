@@ -2,7 +2,7 @@
 
 from mcp import types
 
-from pruefstand.agent.loop import (
+from gomjabbar.agent.loop import (
     MAX_TOOL_RESULT_CHARS,
     final_claim_of,
     server_environment,
@@ -64,8 +64,8 @@ def test_tool_error_prefixed():
 
 
 def test_empty_reply_detection_and_kind():
-    from pruefstand.agent.llm import LLMReply, ToolCall
-    from pruefstand.agent.loop import empty_reply_kind, is_empty_reply
+    from gomjabbar.agent.llm import LLMReply, ToolCall
+    from gomjabbar.agent.loop import empty_reply_kind, is_empty_reply
 
     def reply(content="", calls=(), finish="stop", tokens_out=10, reasoning="List the dir."):
         return LLMReply(

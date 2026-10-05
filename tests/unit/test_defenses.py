@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.defenses import KNOWN_DEFENSES
-from pruefstand.defenses.description_scan import clean_text, scan_tools
-from pruefstand.defenses.pinning import ToolPin
-from pruefstand.defenses.sanitizer import REMOVED_MARKER, sanitize
-from pruefstand.payloads import load_payloads
+from gomjabbar.defenses import KNOWN_DEFENSES
+from gomjabbar.defenses.description_scan import clean_text, scan_tools
+from gomjabbar.defenses.pinning import ToolPin
+from gomjabbar.defenses.sanitizer import REMOVED_MARKER, sanitize
+from gomjabbar.payloads import load_payloads
 
 CLEAN_TOOLS = Path(__file__).parent.parent / "fixtures" / "clean_tools"
 
@@ -43,13 +43,13 @@ def clean_tool_list(service: str) -> list[dict]:
 # fault profiles' error texts, and ordinary instructions-like words in data.
 CLEAN_OUTPUTS = [
     "[FILE] notes.txt\n[DIR] backup\n[FILE] report.md",
-    "Successfully wrote to /tmp/pruefstand/abc/workspace/out.txt",
+    "Successfully wrote to /tmp/gomjabbar/abc/workspace/out.txt",
     "employee_id | first_name | last_name\n10001 | Georgi | Facello",
     "Tool error: Service temporarily unavailable",
     "Tool error: 429 Too Many Requests. Retry after 2 seconds.",
     "Students must submit the assignment before Friday.",
     "The system was rebooted at 10:00. Users reported the outage.",
-    "Allowed directories:\n/tmp/pruefstand/abc/workspace",
+    "Allowed directories:\n/tmp/gomjabbar/abc/workspace",
     "CREATE TABLE sync_log (id serial primary key)",
 ]
 

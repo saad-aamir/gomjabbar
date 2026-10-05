@@ -6,7 +6,7 @@ import gzip
 import json
 from pathlib import Path
 
-from pruefstand.defenses.false_positives import (
+from gomjabbar.defenses.false_positives import (
     Measurement,
     clean_tool_lists,
     collect_tool_results,
@@ -17,7 +17,7 @@ from pruefstand.defenses.false_positives import (
     render_markdown,
     trace_files,
 )
-from pruefstand.payloads import load_payloads
+from gomjabbar.payloads import load_payloads
 
 
 def write_trace(path: Path, episode_id: str, results: list[str], gz: bool) -> None:

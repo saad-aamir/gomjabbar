@@ -770,6 +770,52 @@ wheels = [
 ]
 
 [[package]]
+name = "gomjabbar"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "jinja2" },
+    { name = "litellm" },
+    { name = "mcp" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pandas" },
+    { name = "psycopg2-binary" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "statsmodels" },
+    { name = "typer" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jinja2", specifier = ">=3.1" },
+    { name = "litellm", specifier = ">=1.50" },
+    { name = "mcp", specifier = ">=1.30,<2" },
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "pandas", specifier = ">=2.1" },
+    { name = "psycopg2-binary", specifier = ">=2.9.13" },
+    { name = "pydantic", specifier = ">=2.6" },
+    { name = "pyyaml", specifier = ">=6" },
+    { name = "statsmodels", specifier = ">=0.14" },
+    { name = "typer", specifier = ">=0.12" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
+    { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1829,52 +1875,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/ef/8bae0a316d406644450522f2f3d44a4e19632f5f3bb60d1d0e6c53842616/propcache-0.5.4-cp315-cp315t-win_amd64.whl", hash = "sha256:02c0a34f16889cf800f10f0247a564d8ce6eeab6ffcd7c87198f769067eb8432", size = 48574, upload-time = "2026-09-16T00:17:10.077Z" },
     { url = "https://files.pythonhosted.org/packages/57/be/bcc053f66a97355683884b448198e79580fae8e8fa4d96b9bb01614e9913/propcache-0.5.4-cp315-cp315t-win_arm64.whl", hash = "sha256:dc4242ca653c9b30ab51c5f8193323e7bc0928f897ee9103201e59a43abcb72e", size = 45625, upload-time = "2026-09-16T00:17:11.377Z" },
     { url = "https://files.pythonhosted.org/packages/f5/cd/785c64ed382f3f04201870267b02783f63b4678c2acfddc177a3ebcc2727/propcache-0.5.4-py3-none-any.whl", hash = "sha256:62c60aec739ed00124573cce1178138fd690c7676352d67a37328c1cf51d7468", size = 16338, upload-time = "2026-09-16T00:17:13.106Z" },
-]
-
-[[package]]
-name = "pruefstand"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "jinja2" },
-    { name = "litellm" },
-    { name = "mcp" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "pandas" },
-    { name = "psycopg2-binary" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "statsmodels" },
-    { name = "typer" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "jinja2", specifier = ">=3.1" },
-    { name = "litellm", specifier = ">=1.50" },
-    { name = "mcp", specifier = ">=1.30,<2" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "pandas", specifier = ">=2.1" },
-    { name = "psycopg2-binary", specifier = ">=2.9.13" },
-    { name = "pydantic", specifier = ">=2.6" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "statsmodels", specifier = ">=0.14" },
-    { name = "typer", specifier = ">=0.12" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-asyncio", specifier = ">=0.23" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]

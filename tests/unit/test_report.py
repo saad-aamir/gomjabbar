@@ -2,11 +2,11 @@
 
 import re
 
-from pruefstand.config import RunConfig, dump_config
-from pruefstand.models import Condition
-from pruefstand.report.card import build_card, card_text
-from pruefstand.report.html import write_report
-from pruefstand.runner.store import RunStore
+from gomjabbar.config import RunConfig, dump_config
+from gomjabbar.models import Condition
+from gomjabbar.report.card import build_card, card_text
+from gomjabbar.report.html import write_report
+from gomjabbar.runner.store import RunStore
 from tests.helpers import make_result, make_spec
 
 PROFILES = ["timeout", "empty"]

@@ -6,12 +6,12 @@ import functools
 from collections import Counter
 from pathlib import Path
 
-from pruefstand.conditions import inject, poison
-from pruefstand.config import load_config
-from pruefstand.models import Condition
-from pruefstand.payloads import load_payloads
-from pruefstand.runner.grid import build_specs
-from pruefstand.tasks.mcpmark import read_suite
+from gomjabbar.conditions import inject, poison
+from gomjabbar.config import load_config
+from gomjabbar.models import Condition
+from gomjabbar.payloads import load_payloads
+from gomjabbar.runner.grid import build_specs
+from gomjabbar.tasks.mcpmark import read_suite
 
 REPO = Path(__file__).resolve().parents[2]
 MODEL_120B = "openrouter/openai/gpt-oss-120b"

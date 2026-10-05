@@ -11,11 +11,11 @@ import json
 import sys
 from pathlib import Path
 
-from pruefstand.agent.loop import AgentSession, LoopLimits, ServerLaunch, Trace
-from pruefstand.defenses.pinning import ToolPin
-from pruefstand.defenses.sanitizer import REMOVED_MARKER
-from pruefstand.payloads import load_payloads
-from pruefstand.proxy.plan import InjectRule, PoisonRule, ProxyPlan, save_plan
+from gomjabbar.agent.loop import AgentSession, LoopLimits, ServerLaunch, Trace
+from gomjabbar.defenses.pinning import ToolPin
+from gomjabbar.defenses.sanitizer import REMOVED_MARKER
+from gomjabbar.payloads import load_payloads
+from gomjabbar.proxy.plan import InjectRule, PoisonRule, ProxyPlan, save_plan
 from tests.fixtures.scripted_llm import ScriptedLLM, call, final
 
 FAKE_SERVER = Path(__file__).resolve().parents[1] / "fixtures" / "fake_server.py"

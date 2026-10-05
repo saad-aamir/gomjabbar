@@ -4,13 +4,13 @@ import math
 
 import pytest
 
-from pruefstand.analysis.metrics import (
+from gomjabbar.analysis.metrics import (
     incomplete_tasks,
     pass_hat_k,
     per_task_pass_hat_k,
     per_task_pass_rate,
 )
-from pruefstand.analysis.stats import bootstrap_mean
+from gomjabbar.analysis.stats import bootstrap_mean
 from tests.helpers import make_result, make_spec
 
 
@@ -65,8 +65,8 @@ def test_bootstrap_empty():
 
 
 def test_robustness_drop_is_paired_by_task():
-    from pruefstand.analysis.metrics import per_task_drop
-    from pruefstand.models import Condition
+    from gomjabbar.analysis.metrics import per_task_drop
+    from gomjabbar.models import Condition
     from tests.helpers import make_result, make_spec
 
     def res(task, condition, passed, attempt=0):
@@ -86,7 +86,7 @@ def test_robustness_drop_is_paired_by_task():
 
 
 def test_fault_recovery_excludes_transport_failures_and_false_success_per_task():
-    from pruefstand.analysis.metrics import fault_recovery_results, per_task_false_success
+    from gomjabbar.analysis.metrics import fault_recovery_results, per_task_false_success
     from tests.helpers import make_result, make_spec
 
     ok = make_result(make_spec(task_id="t1"), passed=False, false_success=True)

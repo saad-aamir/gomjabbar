@@ -32,7 +32,7 @@ def pytest_collection_modifyitems(config, items):
         reason = CI_REASON
     else:
         # Imported here: only needed when postgres tests were collected.
-        from pruefstand.sandbox import postgres
+        from gomjabbar.sandbox import postgres
 
         if postgres.service_available():
             return

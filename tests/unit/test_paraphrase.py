@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.conditions import expand, prompt_for
-from pruefstand.models import Condition, Service, Task
-from pruefstand.redteam import paraphrase
-from pruefstand.redteam.literals import extract_literals, missing_literals
-from pruefstand.tasks.mcpmark import PROMPT_SUFFIX
+from gomjabbar.conditions import expand, prompt_for
+from gomjabbar.models import Condition, Service, Task
+from gomjabbar.redteam import paraphrase
+from gomjabbar.redteam.literals import extract_literals, missing_literals
+from gomjabbar.tasks.mcpmark import PROMPT_SUFFIX
 from tests.fixtures.scripted_llm import ScriptedLLM, final
 from tests.helpers import make_spec
 
@@ -159,7 +159,7 @@ def cached(tmp_path, monkeypatch):
 
 
 def test_every_model_sees_identical_paraphrases(cached):
-    from pruefstand.config import RunConfig
+    from gomjabbar.config import RunConfig
 
     config = RunConfig.model_validate(
         dict(
@@ -202,8 +202,8 @@ def test_missing_or_stale_cache_refuses(cached):
 
 
 def test_fault_condition_expands_one_episode_per_profile():
-    from pruefstand.conditions import plan_for
-    from pruefstand.config import RunConfig
+    from gomjabbar.conditions import plan_for
+    from gomjabbar.config import RunConfig
 
     config = RunConfig.model_validate(
         dict(
