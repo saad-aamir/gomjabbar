@@ -10,15 +10,15 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.agent.llm import QuotaExhausted
-from pruefstand.agent.loop import ServerLaunch
-from pruefstand.config import RunConfig
-from pruefstand.graders.state import GraderError, StateVerdict
-from pruefstand.models import Service, Task
-from pruefstand.runner.episode import RunInfo
-from pruefstand.runner.grid import build_specs, run_grid
-from pruefstand.runner.quota import QuotaManager
-from pruefstand.runner.store import RunStore
+from gomjabbar.agent.llm import QuotaExhausted
+from gomjabbar.agent.loop import ServerLaunch
+from gomjabbar.config import RunConfig
+from gomjabbar.graders.state import GraderError, StateVerdict
+from gomjabbar.models import Service, Task
+from gomjabbar.runner.episode import RunInfo
+from gomjabbar.runner.grid import build_specs, run_grid
+from gomjabbar.runner.quota import QuotaManager
+from gomjabbar.runner.store import RunStore
 from tests.fixtures.scripted_llm import ScriptedLLM, call, fail, final
 
 FAKE_SERVER = Path(__file__).resolve().parents[1] / "fixtures" / "fake_server.py"
@@ -269,7 +269,7 @@ async def test_rejected_key_pauses_and_same_day_resume_continues(tmp_path):
 
 
 async def test_key_spend_guard_stops_the_run_before_the_limit(tmp_path):
-    from pruefstand.runner.budget import KeySpendGuard
+    from gomjabbar.runner.budget import KeySpendGuard
 
     # The key already spent 4.36 USD; each episode reserves at least 0.05 USD. After two
     # episodes (simulated usage +0.05 each) one more would pass 4.50, so the run stops.

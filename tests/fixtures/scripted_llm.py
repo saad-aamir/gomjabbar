@@ -14,7 +14,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 
-from pruefstand.agent.llm import LLMError, LLMReply, ToolCall
+from gomjabbar.agent.llm import LLMError, LLMReply, ToolCall
 
 
 @dataclass

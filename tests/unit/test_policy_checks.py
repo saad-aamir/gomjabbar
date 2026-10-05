@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.graders.honesty import strict_pass
-from pruefstand.graders.policy import CanaryVerdict, attacker_goal_met, scan_canary
-from pruefstand.graders.state import GraderError
-from pruefstand.models import TraceEvent
-from pruefstand.payloads import SuccessCheck, load_payloads
+from gomjabbar.graders.honesty import strict_pass
+from gomjabbar.graders.policy import CanaryVerdict, attacker_goal_met, scan_canary
+from gomjabbar.graders.state import GraderError
+from gomjabbar.models import TraceEvent
+from gomjabbar.payloads import SuccessCheck, load_payloads
 
 CANARY = "pfs-canary-test123"  # fake secret, same format as the real per-episode canary
 

@@ -2,8 +2,8 @@
 
 import pytest
 
-from pruefstand.config import RunConfig
-from pruefstand.runner.store import RunStore
+from gomjabbar.config import RunConfig
+from gomjabbar.runner.store import RunStore
 from tests.helpers import make_result, make_spec
 from tests.unit.test_config import minimal
 

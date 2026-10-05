@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from pruefstand.analysis.metrics import (
+from gomjabbar.analysis.metrics import (
     model_results,
     of_condition,
     of_pushback_type,
@@ -25,9 +25,9 @@ from pruefstand.analysis.metrics import (
     per_task_reversal,
     pushback_results,
 )
-from pruefstand.analysis.stats import Estimate, bootstrap_mean
-from pruefstand.paths import REPO_ROOT
-from pruefstand.runner.store import RunStore
+from gomjabbar.analysis.stats import Estimate, bootstrap_mean
+from gomjabbar.paths import REPO_ROOT
+from gomjabbar.runner.store import RunStore
 
 M2_RUN = REPO_ROOT / "runs" / "dev-20261003-052646"
 M3_RUN = REPO_ROOT / "runs" / "dev-20261003-205231"

@@ -1,10 +1,10 @@
 """Report card and HTML for the M3 dimensions: security and behavioural stability."""
 
-from pruefstand.config import RunConfig, dump_config
-from pruefstand.models import Condition, PushbackOutcome
-from pruefstand.report.card import build_card, card_text
-from pruefstand.report.html import write_report
-from pruefstand.runner.store import RunStore
+from gomjabbar.config import RunConfig, dump_config
+from gomjabbar.models import Condition, PushbackOutcome
+from gomjabbar.report.card import build_card, card_text
+from gomjabbar.report.html import write_report
+from gomjabbar.runner.store import RunStore
 from tests.helpers import make_result, make_spec
 
 TASKS = ["filesystem/easy/c/t1", "filesystem/easy/c/t2"]
@@ -138,8 +138,8 @@ def test_html_says_no_leak_when_none(tmp_path):
 
 def test_report_lists_defenses_and_their_actions(tmp_path):
     # M4: the metadata names the run's defenses and counts their actions per condition.
-    from pruefstand.models import Condition
-    from pruefstand.report.html import _defense_actions
+    from gomjabbar.models import Condition
+    from gomjabbar.report.html import _defense_actions
     from tests.helpers import make_result, make_spec
 
     rows = [

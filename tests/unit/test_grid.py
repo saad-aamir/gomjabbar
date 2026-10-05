@@ -1,6 +1,6 @@
 """Tests for runner/grid.py ordering."""
 
-from pruefstand.runner.grid import interleave_models
+from gomjabbar.runner.grid import interleave_models
 from tests.helpers import make_spec
 
 

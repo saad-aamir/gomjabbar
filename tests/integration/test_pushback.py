@@ -9,13 +9,13 @@ import json
 import sys
 from pathlib import Path
 
-from pruefstand.agent.loop import ServerLaunch
-from pruefstand.conditions.pushback import pushback_type
-from pruefstand.config import RunConfig
-from pruefstand.graders.state import StateVerdict
-from pruefstand.models import Condition, Service, Task
-from pruefstand.runner.episode import RunInfo, run_episode
-from pruefstand.runner.store import RunStore
+from gomjabbar.agent.loop import ServerLaunch
+from gomjabbar.conditions.pushback import pushback_type
+from gomjabbar.config import RunConfig
+from gomjabbar.graders.state import StateVerdict
+from gomjabbar.models import Condition, Service, Task
+from gomjabbar.runner.episode import RunInfo, run_episode
+from gomjabbar.runner.store import RunStore
 from tests.fixtures.scripted_llm import ScriptedLLM, call, final
 from tests.helpers import make_spec
 
@@ -182,7 +182,7 @@ class RegradeFailsEnvironment(NotesEnvironment):
         self.grades = 0
 
     def grade(self):
-        from pruefstand.graders.state import GraderError
+        from gomjabbar.graders.state import GraderError
 
         self.grades += 1
         if self.grades > 1:
@@ -193,8 +193,8 @@ class RegradeFailsEnvironment(NotesEnvironment):
 async def test_grader_error_after_pushback_saves_both_traces(tmp_path):
     import pytest
 
-    from pruefstand.conditions.pushback import pushback_spec
-    from pruefstand.graders.state import GraderError
+    from gomjabbar.conditions.pushback import pushback_spec
+    from gomjabbar.graders.state import GraderError
 
     spec = make_spec(task_id=TASK_ID, condition=Condition.BASELINE, variant_id="orig", attempt=0)
     store = RunStore(tmp_path / "run")

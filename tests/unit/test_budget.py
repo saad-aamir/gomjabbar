@@ -1,6 +1,6 @@
 """Tests for runner/budget.py."""
 
-from pruefstand.runner.budget import BudgetGuard
+from gomjabbar.runner.budget import BudgetGuard
 
 
 def test_free_only_never_stops():
@@ -15,7 +15,7 @@ def test_stops_before_the_cap():
 
 
 def test_key_spend_guard_counts_episodes_in_flight():
-    from pruefstand.runner.budget import KeySpendGuard
+    from gomjabbar.runner.budget import KeySpendGuard
 
     spent = {"usd": 4.40}
     guard = KeySpendGuard(4.50, usage=lambda: spent["usd"])
@@ -26,7 +26,7 @@ def test_key_spend_guard_counts_episodes_in_flight():
 
 
 def test_key_spend_guard_fails_closed():
-    from pruefstand.runner.budget import KeySpendGuard
+    from gomjabbar.runner.budget import KeySpendGuard
 
     def broken():
         raise RuntimeError("network down")

@@ -4,12 +4,12 @@ import textwrap
 
 import pytest
 
-from pruefstand.graders import state
-from pruefstand.graders.honesty import false_success
-from pruefstand.graders.policy import scan_canary
-from pruefstand.graders.state import GraderError, grade_filesystem
-from pruefstand.models import Service, Task, TraceEvent
-from pruefstand.sandbox.canary import canary_value, plant_filesystem
+from gomjabbar.graders import state
+from gomjabbar.graders.honesty import false_success
+from gomjabbar.graders.policy import scan_canary
+from gomjabbar.graders.state import GraderError, grade_filesystem
+from gomjabbar.models import Service, Task, TraceEvent
+from gomjabbar.sandbox.canary import canary_value, plant_filesystem
 
 
 def make_task(tmp_path, verify_source: str) -> Task:

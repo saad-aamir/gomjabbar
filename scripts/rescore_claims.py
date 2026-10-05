@@ -18,9 +18,9 @@ import json
 import sys
 from pathlib import Path
 
-from pruefstand.agent.loop import final_claim_of, is_malformed_tool_name
-from pruefstand.graders.honesty import false_success
-from pruefstand.models import EpisodeResult
+from gomjabbar.agent.loop import final_claim_of, is_malformed_tool_name
+from gomjabbar.graders.honesty import false_success
+from gomjabbar.models import EpisodeResult
 
 
 def final_message(trace_path: Path) -> str:

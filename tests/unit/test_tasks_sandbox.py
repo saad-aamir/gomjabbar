@@ -2,11 +2,11 @@
 
 import os
 
-from pruefstand.models import Service
-from pruefstand.paths import REPO_ROOT
-from pruefstand.sandbox import filesystem
-from pruefstand.sandbox.filesystem import FilesystemSandbox
-from pruefstand.tasks.mcpmark import MCPMarkTasks, category_of, read_suite
+from gomjabbar.models import Service
+from gomjabbar.paths import REPO_ROOT
+from gomjabbar.sandbox import filesystem
+from gomjabbar.sandbox.filesystem import FilesystemSandbox
+from gomjabbar.tasks.mcpmark import MCPMarkTasks, category_of, read_suite
 
 
 def test_easy_filesystem_suite_matches_dev_suite():

@@ -5,7 +5,7 @@ Why: many tests need a result row and only care about one or two fields.
 How: tests call `make_spec(...)` or `make_result(...)` and override what they test.
 """
 
-from pruefstand.models import Condition, EpisodeResult, EpisodeSpec
+from gomjabbar.models import Condition, EpisodeResult, EpisodeSpec
 
 
 def make_spec(**overrides) -> EpisodeSpec:

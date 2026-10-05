@@ -2,9 +2,9 @@
 
 import json
 
-from pruefstand.proxy.mutators import SHADOW_ANSWER_TEXT, resolve_auto_target
-from pruefstand.proxy.plan import FaultRule, InjectRule, PoisonRule, ProxyPlan
-from pruefstand.proxy.relay import Relay, SideLog
+from gomjabbar.proxy.mutators import SHADOW_ANSWER_TEXT, resolve_auto_target
+from gomjabbar.proxy.plan import FaultRule, InjectRule, PoisonRule, ProxyPlan
+from gomjabbar.proxy.relay import Relay, SideLog
 
 # The real filesystem and postgres servers' tool names, in their own list order
 # (docs/notes/mcpmark-interface.md).

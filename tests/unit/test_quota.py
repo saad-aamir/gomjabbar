@@ -2,10 +2,10 @@
 
 import pytest
 
-from pruefstand.agent.llm import QuotaExhausted
-from pruefstand.config import ModelConfig
-from pruefstand.runner.quota import QuotaManager, TokenBucket, TokenWindow
-from pruefstand.runner.store import RunStore
+from gomjabbar.agent.llm import QuotaExhausted
+from gomjabbar.config import ModelConfig
+from gomjabbar.runner.quota import QuotaManager, TokenBucket, TokenWindow
+from gomjabbar.runner.store import RunStore
 
 
 class Clock:

@@ -25,15 +25,15 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.agent.loop import ServerLaunch
-from pruefstand.conditions import paraphrase as paraphrase_condition
-from pruefstand.config import RunConfig
-from pruefstand.graders.state import StateVerdict
-from pruefstand.models import Condition, Service, Task
-from pruefstand.payloads import attack_variant, load_payloads
-from pruefstand.runner.episode import RunInfo, run_episode
-from pruefstand.runner.store import RunStore
-from pruefstand.sandbox.canary import canary_value
+from gomjabbar.agent.loop import ServerLaunch
+from gomjabbar.conditions import paraphrase as paraphrase_condition
+from gomjabbar.config import RunConfig
+from gomjabbar.graders.state import StateVerdict
+from gomjabbar.models import Condition, Service, Task
+from gomjabbar.payloads import attack_variant, load_payloads
+from gomjabbar.runner.episode import RunInfo, run_episode
+from gomjabbar.runner.store import RunStore
+from gomjabbar.sandbox.canary import canary_value
 from tests.fixtures.scripted_llm import ScriptedLLM, call, final
 from tests.helpers import make_spec
 

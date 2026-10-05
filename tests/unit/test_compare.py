@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from pruefstand.analysis.compare import (
+from gomjabbar.analysis.compare import (
     compare_runs,
     comparison_text,
     mcnemar_test,
     outcome,
 )
-from pruefstand.models import Condition
-from pruefstand.report.compare_html import build_compare_page
+from gomjabbar.models import Condition
+from gomjabbar.report.compare_html import build_compare_page
 from tests.helpers import make_result, make_spec
 
 M1, M2 = "openrouter/openai/gpt-oss-120b", "openrouter/openai/gpt-oss-20b"

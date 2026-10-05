@@ -21,10 +21,10 @@ import tempfile
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from pruefstand.agent.loop import server_environment
-from pruefstand.paths import REPO_ROOT
-from pruefstand.sandbox.postgres import POSTGRES_SERVER_COMMAND, database_uri, ensure_container
-from pruefstand.tasks.mcpmark import FILESYSTEM_SERVER_COMMAND
+from gomjabbar.agent.loop import server_environment
+from gomjabbar.paths import REPO_ROOT
+from gomjabbar.sandbox.postgres import POSTGRES_SERVER_COMMAND, database_uri, ensure_container
+from gomjabbar.tasks.mcpmark import FILESYSTEM_SERVER_COMMAND
 
 # Where the fixtures go; tests/unit/test_defenses.py reads them.
 OUT_DIR = REPO_ROOT / "tests" / "fixtures" / "clean_tools"

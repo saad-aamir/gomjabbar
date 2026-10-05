@@ -1,8 +1,8 @@
 """Tests for analysis/estimate.py and analysis/summary.py."""
 
-from pruefstand.analysis.estimate import estimate
-from pruefstand.analysis.summary import summary_text
-from pruefstand.config import RunConfig
+from gomjabbar.analysis.estimate import estimate
+from gomjabbar.analysis.summary import summary_text
+from gomjabbar.config import RunConfig
 from tests.helpers import make_result, make_spec
 
 
@@ -54,7 +54,7 @@ def test_estimate_borrows_for_a_model_without_pilot_episodes():
 
 
 def test_estimate_wall_hours_and_usd_for_a_paid_model():
-    from pruefstand.analysis.estimate import wall_hours
+    from gomjabbar.analysis.estimate import wall_hours
 
     cfg = RunConfig.model_validate(
         dict(

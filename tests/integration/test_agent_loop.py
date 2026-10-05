@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pruefstand.agent.loop import AgentSession, LoopLimits, ServerLaunch, Trace
+from gomjabbar.agent.loop import AgentSession, LoopLimits, ServerLaunch, Trace
 from tests.fixtures.scripted_llm import ScriptedLLM, call, fail, final, raw_call
 
 FAKE_SERVER = Path(__file__).resolve().parents[1] / "fixtures" / "fake_server.py"
@@ -222,7 +222,7 @@ FAULT_PROFILES = [
 
 
 async def run_with_fault(tmp_path, profile):
-    from pruefstand.proxy.plan import FaultRule, ProxyPlan, save_plan
+    from gomjabbar.proxy.plan import FaultRule, ProxyPlan, save_plan
 
     plan_path = tmp_path / "plan.json"
     save_plan(ProxyPlan(faults=[FaultRule(profile=profile, nth_call=2, latency_ms=200)]), plan_path)
@@ -279,7 +279,7 @@ async def test_server_executes_the_call_in_every_fault_profile(tmp_path, profile
 
 
 async def run_with_plan(tmp_path, plan, steps):
-    from pruefstand.proxy.plan import save_plan
+    from gomjabbar.proxy.plan import save_plan
 
     plan_path = tmp_path / "plan.json"
     save_plan(plan, plan_path)
@@ -301,7 +301,7 @@ async def run_with_plan(tmp_path, plan, steps):
 
 
 async def test_shadow_tool_call_never_reaches_the_server(tmp_path):
-    from pruefstand.proxy.plan import PoisonRule, ProxyPlan
+    from gomjabbar.proxy.plan import PoisonRule, ProxyPlan
 
     rule = PoisonRule(
         mode="shadow_tool",
@@ -330,7 +330,7 @@ async def test_shadow_tool_call_never_reaches_the_server(tmp_path):
 
 
 async def test_poisoned_description_and_injection_reach_the_model(tmp_path):
-    from pruefstand.proxy.plan import InjectRule, PoisonRule, ProxyPlan
+    from gomjabbar.proxy.plan import InjectRule, PoisonRule, ProxyPlan
 
     plan = ProxyPlan(
         poisons=[PoisonRule(mode="append_description", target_tool="auto", text="POISON")],

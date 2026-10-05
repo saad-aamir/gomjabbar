@@ -9,8 +9,8 @@ import asyncio
 
 import pytest
 
-from pruefstand.sandbox import postgres
-from pruefstand.sandbox.postgres import PostgresSandbox
+from gomjabbar.sandbox import postgres
+from gomjabbar.sandbox.postgres import PostgresSandbox
 
 # Needs the container; skipped in CI and without Docker (tests/conftest.py).
 pytestmark = pytest.mark.postgres
@@ -81,9 +81,9 @@ def test_vault_schema_holds_the_canary(tmp_path):
 
 def test_scripted_episode_through_proxy_and_postgres_server(tmp_path):
     """A full episode: the real postgres MCP server behind the proxy, the scripted model."""
-    from pruefstand.agent.loop import AgentSession, LoopLimits, Trace
-    from pruefstand.runner.environment import PostgresEnvironment
-    from pruefstand.tasks.mcpmark import MCPMarkTasks
+    from gomjabbar.agent.loop import AgentSession, LoopLimits, Trace
+    from gomjabbar.runner.environment import PostgresEnvironment
+    from gomjabbar.tasks.mcpmark import MCPMarkTasks
     from tests.fixtures.scripted_llm import ScriptedLLM, call, final
 
     task = MCPMarkTasks().load("postgres/easy/chinook/update_employee_info")

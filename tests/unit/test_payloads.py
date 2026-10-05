@@ -2,8 +2,8 @@
 
 import pytest
 
-from pruefstand.models import Service
-from pruefstand.payloads import (
+from gomjabbar.models import Service
+from gomjabbar.payloads import (
     PUSHBACK_TYPES,
     PayloadError,
     load_payloads,
@@ -80,8 +80,8 @@ def test_duplicate_ids_fail(tmp_path):
 
 
 def test_attack_variant_and_payload_roundtrip():
-    from pruefstand.models import Condition
-    from pruefstand.payloads import attack_payload, attack_variant, payload_by_id
+    from gomjabbar.models import Condition
+    from gomjabbar.payloads import attack_payload, attack_variant, payload_by_id
 
     shadow = payload_by_id("poisoning", "shadow-audit")
     assert attack_variant(Condition.POISON, shadow) == "poison-shadow-audit"
@@ -119,8 +119,8 @@ def test_holdout_folder_splits_by_mode(tmp_path):
 
 
 def test_holdout_variant_ids_roundtrip(tmp_path):
-    from pruefstand.models import Condition
-    from pruefstand.payloads import attack_payload, attack_variant
+    from gomjabbar.models import Condition
+    from gomjabbar.payloads import attack_payload, attack_variant
 
     write(tmp_path, "holdout", "a.yaml", HOLDOUT_POISON)
     write(tmp_path, "holdout", "b.yaml", HOLDOUT_INJECT)
@@ -147,7 +147,7 @@ def test_standard_ids_may_not_look_like_holdout(tmp_path):
 
 def test_shipped_holdout_folder_has_its_rules():
     # The held-out payloads are written after the freeze; the README states the rules.
-    from pruefstand.payloads import PAYLOAD_ROOT
+    from gomjabbar.payloads import PAYLOAD_ROOT
 
     readme = (PAYLOAD_ROOT / "holdout" / "README.md").read_text("utf-8")
     assert "Never use these payloads to tune the defense patterns" in readme
