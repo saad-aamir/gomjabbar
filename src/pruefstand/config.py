@@ -17,6 +17,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from pruefstand.defenses import KNOWN_DEFENSES
 from pruefstand.models import Condition, Service
 
 # Fault profiles the proxy knows (SPEC 5.2). "partial" is P1.
@@ -78,6 +79,9 @@ class RunConfig(BaseModel):
     fault_profiles: list[FaultProfile] = Field(default_factory=list)
     conditions: list[Condition]
     defenses: list[str] = Field(default_factory=list)
+    # Which attack payloads poison and inject use: the standard folders, or payloads/holdout/
+    # (written after the defense patterns were frozen; DEVIATIONS.md, 2026-10-04).
+    payload_set: Literal["standard", "holdout"] = "standard"
     # MCPMark's defaults: MAX_TURNS = 100 model calls (src/agents/mcpmark_agent.py:47) and
     # --timeout 3600 s per task (pipeline.py). Matched since 2026-10-03 (DEVIATIONS.md).
     max_steps: int = 100
@@ -90,6 +94,14 @@ class RunConfig(BaseModel):
     # Saad). Checked against the provider's own usage figure before every episode. None = off.
     key_spend_cap_usd: float | None = None
     keep_sandboxes: bool = False
+
+    @model_validator(mode="after")
+    def _defenses_are_known(self) -> RunConfig:
+        # A typo in a defense name would otherwise run the episode undefended, silently.
+        unknown = [name for name in self.defenses if name not in KNOWN_DEFENSES]
+        if unknown:
+            raise ValueError(f"unknown defenses {unknown}; known: {list(KNOWN_DEFENSES)}")
+        return self
 
     @model_validator(mode="after")
     def _spend_cap_is_safe(self) -> RunConfig:
@@ -113,6 +125,10 @@ class RunConfig(BaseModel):
     def config_hash(self) -> str:
         """sha1 of the resolved config as canonical JSON. Same settings, same hash."""
         data = self.model_dump(mode="json")
+        # payload_set was added in M4; leaving its default out keeps the hash of every
+        # earlier config (and of the rows already recorded with it) unchanged.
+        if data.get("payload_set") == "standard":
+            del data["payload_set"]
         canonical = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.sha1(canonical.encode("utf-8")).hexdigest()
 

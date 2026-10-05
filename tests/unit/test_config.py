@@ -75,3 +75,13 @@ def test_provider_pin_only_for_openrouter():
     ModelConfig(name="openrouter/openai/gpt-oss-20b", provider="coreweave/fp4")
     with pytest.raises(ValueError, match="openrouter"):
         ModelConfig(name="groq/openai/gpt-oss-20b", provider="coreweave/fp4")
+
+
+def test_known_defenses_accepted_and_typos_refused():
+    config = RunConfig.model_validate(
+        minimal(defenses=["pinning", "sanitizer", "description_scan"])
+    )
+    assert config.defenses == ["pinning", "sanitizer", "description_scan"]
+    # A typo would otherwise run every episode undefended without anyone noticing.
+    with pytest.raises(ValueError, match="unknown defenses"):
+        RunConfig.model_validate(minimal(defenses=["sanitiser"]))

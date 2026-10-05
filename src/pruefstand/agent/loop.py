@@ -32,6 +32,9 @@ from mcp.shared.exceptions import McpError
 
 from pruefstand.agent.llm import ChatModel, LLMError, LLMReply, QuotaExhausted
 from pruefstand.agent.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION
+from pruefstand.defenses.description_scan import scan_tools
+from pruefstand.defenses.pinning import ToolPin
+from pruefstand.defenses.sanitizer import sanitize
 from pruefstand.models import StopReason, TraceEvent, TraceKind
 
 # Tool results longer than this are cut before the model sees them (SPEC 5.3).
@@ -166,6 +169,8 @@ class AgentOutcome:
     # account problem such as missing credit or a rejected key (pauses this invocation only).
     quota_daily: bool = True
     throttle_s: float = 0.0  # time spent waiting on the quota throttle (not agent time)
+    # defense_action events in this turn (the first turn also counts the start-up tool scan).
+    defense_actions: int = 0
     error: str = ""
 
 
@@ -258,6 +263,7 @@ class AgentSession:
         plan_path: Path | None = None,
         proxy_log_path: Path | None = None,
         stderr_path: Path | None = None,
+        defenses: list[str] | tuple[str, ...] = (),
     ):
         self.launch = launch
         self.llm = llm
@@ -273,6 +279,12 @@ class AgentSession:
         self._tools_changed = False  # set by notifications/tools/list_changed
         self._started = time.monotonic()
         self._throttle_s = 0.0  # quota waits so far in this session, excluded from agent time
+        # Host-side defenses switched on for this episode (SPEC 5.7, defenses/).
+        self.defenses = set(defenses)
+        self._pin: ToolPin | None = None  # pinning: the tool list of the first listing
+        self._hidden_tools: set[str] = set()  # description_scan: tools the model never sees
+        self.defense_actions = 0  # defense_action events so far in this session
+        self._reported_actions = 0  # how many of them earlier turns already reported
 
     # ---- session start and stop --------------------------------------------------------
 
@@ -330,10 +342,47 @@ class AgentSession:
             self._tools_changed = True
 
     async def _refresh_tools(self) -> None:
-        """List tools and convert them for the model. Also fills the SDK's schema cache."""
+        """List tools and convert them for the model. Also fills the SDK's schema cache.
+
+        With defenses on, the model sees the defended list: pinning keeps the first listing's
+        definitions, then description_scan strips instruction-like sentences and hides tools
+        that are mostly instructions. Every change is a defense_action trace event.
+        """
         listed = await self.session.list_tools()
-        self.tools = [mcp_tool_to_openai(tool) for tool in listed.tools]
+        tools = [mcp_tool_to_openai(tool) for tool in listed.tools]
         self._tools_changed = False
+        # 1. Pinning: the first listing is pinned; later ones are compared with it, and the
+        # model keeps seeing the pinned definitions.
+        if "pinning" in self.defenses:
+            if self._pin is None:
+                self._pin = ToolPin(tools)
+            else:
+                tools, changes = self._pin.check(tools)
+                for change in changes:
+                    self._defense_event("pinning", {"tool": change.tool, "change": change.change})
+        # 2. Description scan on what the model would see. Hidden tools are remembered so a
+        # call to one by name is refused (see _execute).
+        if "description_scan" in self.defenses:
+            tools, actions = scan_tools(tools)
+            for action in actions:
+                self._defense_event(
+                    "description_scan",
+                    {
+                        "tool": action.tool,
+                        "action": action.action,
+                        "where": action.where,
+                        "text": action.text,
+                        "pattern": action.pattern,
+                    },
+                )
+                if action.action == "hidden_tool":
+                    self._hidden_tools.add(action.tool)
+        self.tools = tools
+
+    def _defense_event(self, defense: str, detail: dict) -> None:
+        """Record one defense action in the trace and count it."""
+        self.defense_actions += 1
+        self.trace.add("defense_action", {"defense": defense, **detail})
 
     # ---- the loop ----------------------------------------------------------------------
 
@@ -369,6 +418,9 @@ class AgentSession:
             self.trace.add("error", {"where": "loop", "error": "hard wall-clock timeout"})
         # The claim always comes from the last assistant text, even after a limit was hit.
         outcome.final_claim = final_claim_of(outcome.final_message)
+        # Defense actions since the last turn reported (start-up scan included in the first).
+        outcome.defense_actions = self.defense_actions - self._reported_actions
+        self._reported_actions = self.defense_actions
         self.trace.add(
             "end",
             {
@@ -393,7 +445,7 @@ class AgentSession:
                 outcome.stop_reason = "timeout"
                 self.trace.add("error", {"where": "loop", "error": "episode timeout"})
                 return
-            # Re-list tools if the server said they changed (pinning defense comes in M3).
+            # Re-list tools if the server said they changed (pinning keeps the originals).
             if self._tools_changed:
                 await self._refresh_tools()
 
@@ -536,6 +588,13 @@ class AgentSession:
             return text
 
         self.trace.add("tool_call", {"name": name, "arguments": arguments, **_name_flag(name)})
+        # A tool the description scan hid is refused by the host and never reaches the
+        # server, as if it did not exist.
+        if name in self._hidden_tools:
+            self._defense_event("description_scan", {"tool": name, "action": "blocked_call"})
+            text = f"Tool error: unknown tool {name}"
+            self.trace.add("tool_result", {"name": name, "text": text, "is_error": True})
+            return text
         started = time.monotonic()
         try:
             result = await self.session.call_tool(
@@ -566,9 +625,25 @@ class AgentSession:
             return text
 
         text = tool_result_text(result)
+        latency_ms = (time.monotonic() - started) * 1000
+        # Sanitizer: instruction-like lines are removed before the model sees the result.
+        # The trace keeps the text the model actually saw; the removed lines are in the
+        # defense_action events.
+        if "sanitizer" in self.defenses:
+            text, removals = sanitize(text)
+            for removal in removals:
+                self._defense_event(
+                    "sanitizer",
+                    {
+                        "tool": name,
+                        "action": "removed_line",
+                        "text": removal.text,
+                        "pattern": removal.pattern,
+                    },
+                )
         self.trace.add(
             "tool_result",
             {"name": name, "text": text, "is_error": bool(result.isError)},
-            latency_ms=(time.monotonic() - started) * 1000,
+            latency_ms=latency_ms,
         )
         return text

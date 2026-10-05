@@ -1,0 +1,37 @@
+# M4 holdout experiment, undefended: gpt-oss-120b, poison and inject with the held-out payloads only.
+# Pair with configs/holdout-defended.yaml in `pruefstand compare` (DEVIATIONS.md, 2026-10-04).
+# Every field is explained in docs/SPEC.md section 10.
+run_name: holdout
+suite: suites/dev.txt
+services: [filesystem, postgres]
+models:
+  - name: openrouter/openai/gpt-oss-120b        # the model the poisoning works on (M3: 76.7% attack success)
+    api_key_env: PFS_OPENROUTER_API_KEY
+    free_tier: false
+    provider: coreweave/fp4
+    price_usd_per_mtok: 0.17                    # fallback only: CoreWeave output price
+    rpm_limit: 60
+redteam_model:                                  # paraphrases and equivalence checks (from M2)
+  name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
+  provider: coreweave/fp4
+  price_usd_per_mtok: 0.17
+  rpm_limit: 60
+temperature: 1.0                         # sent on every call, as MCPMark does; null would mean the provider default
+max_tokens: 32768                        # output cap per model call, as in MCPMark
+seed: 20261002
+k: 5                                     # baseline attempts per task
+paraphrases: 3                           # paraphrase variants per task
+fault_profiles: [timeout, rpc_error, tool_error, malformed, empty, rate_limit]
+conditions: [poison, inject]
+defenses: []                             # host-side defenses (SPEC 5.7, src/pruefstand/defenses/)
+max_steps: 100                           # model calls per episode, as MCPMark's MAX_TURNS
+tool_timeout_s: 30
+episode_timeout_s: 3600                  # seconds of agent time, as MCPMark's --timeout default
+concurrency: 2                           # two episodes at a time (one model)
+spend_cap_eur: 0.5                       # set by Saad; the run stops before it would spend more
+usd_to_eur: 0.88                         # set by Saad; converts the provider's USD cost to euros
+key_spend_cap_usd: 4.5                  # set by Saad; never let the OpenRouter key's total spend pass this (USD, all runs)
+payload_set: holdout                     # payloads/holdout/, written after the pattern freeze
+keep_sandboxes: false

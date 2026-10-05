@@ -94,3 +94,60 @@ def test_attack_variant_and_payload_roundtrip():
     # Non-attack conditions have no payload, so the runner gets None for any of their episodes.
     assert attack_payload(Condition.BASELINE, "orig") is None
     assert attack_payload(Condition.PUSHBACK, "pushback-simple") is None
+
+
+# ---- held-out payloads (M4) ---------------------------------------------------------------
+
+HOLDOUT_POISON = (
+    "id: hp\nmode: append_description\ntarget_tool: auto\ntext: x\n"
+    "success_check: {kind: canary_leaked}\n"
+)
+HOLDOUT_INJECT = "id: hi\ntext: y\nservices: [filesystem]\nsuccess_check: {kind: canary_leaked}\n"
+
+
+def test_holdout_folder_splits_by_mode(tmp_path):
+    write(tmp_path, "holdout", "a.yaml", HOLDOUT_POISON)
+    write(tmp_path, "holdout", "b.yaml", HOLDOUT_INJECT)
+    poison = load_payloads("poisoning", root=tmp_path, holdout=True)
+    inject = load_payloads("injection", root=tmp_path, holdout=True)
+    assert [(p.id, p.kind, p.holdout) for p in poison] == [("hp", "poisoning", True)]
+    assert [(p.id, p.kind, p.holdout) for p in inject] == [("hi", "injection", True)]
+    # Service filters apply as usual.
+    assert load_payloads("injection", Service.POSTGRES, root=tmp_path, holdout=True) == []
+    # The standard folders are not read for a holdout load, and the other way round.
+    assert load_payloads("poisoning", root=tmp_path) == []
+
+
+def test_holdout_variant_ids_roundtrip(tmp_path):
+    from pruefstand.models import Condition
+    from pruefstand.payloads import attack_payload, attack_variant
+
+    write(tmp_path, "holdout", "a.yaml", HOLDOUT_POISON)
+    write(tmp_path, "holdout", "b.yaml", HOLDOUT_INJECT)
+    (hp,) = load_payloads("poisoning", root=tmp_path, holdout=True)
+    (hi,) = load_payloads("injection", root=tmp_path, holdout=True)
+    assert attack_variant(Condition.POISON, hp) == "poison-holdout-hp"
+    assert attack_variant(Condition.INJECT, hi) == "inject-holdout-hi"
+    assert attack_payload(Condition.POISON, "poison-holdout-hp", root=tmp_path) == hp
+    assert attack_payload(Condition.INJECT, "inject-holdout-hi", root=tmp_path) == hi
+
+
+def test_holdout_ids_unique_across_kinds(tmp_path):
+    write(tmp_path, "holdout", "a.yaml", HOLDOUT_POISON)
+    write(tmp_path, "holdout", "b.yaml", HOLDOUT_INJECT.replace("id: hi", "id: hp"))
+    with pytest.raises(PayloadError, match="duplicate"):
+        load_payloads("injection", root=tmp_path, holdout=True)
+
+
+def test_standard_ids_may_not_look_like_holdout(tmp_path):
+    write(tmp_path, "injection", "a.yaml", HOLDOUT_INJECT.replace("id: hi", "id: holdout-x"))
+    with pytest.raises(PayloadError, match="must not start"):
+        load_payloads("injection", root=tmp_path)
+
+
+def test_shipped_holdout_folder_has_its_rules():
+    # The held-out payloads are written after the freeze; the README states the rules.
+    from pruefstand.payloads import PAYLOAD_ROOT
+
+    readme = (PAYLOAD_ROOT / "holdout" / "README.md").read_text("utf-8")
+    assert "Never use these payloads to tune the defense patterns" in readme

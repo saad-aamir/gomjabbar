@@ -1,12 +1,12 @@
 """Command line interface: doctor, pilot, estimate, run and report (SPEC 11).
 
 What: the `pruefstand` command, built with Typer: doctor, paraphrase, pilot, estimate, run,
-report.
+report, compare.
 Why: every experiment step is one command, so runs are reproducible from the shell history
 and the cloud session can run them in the background with nohup.
 How: each command loads a config, builds the pieces (task loader, run store, quota manager,
-model clients) and hands them to the runner or analysis modules. The HTML report and the
-paired `compare` arrive in M3.
+model clients) and hands them to the runner or analysis modules. `compare` (M4) pairs two
+runs episode by episode and writes compare.html.
 """
 
 from __future__ import annotations
@@ -95,6 +95,12 @@ def _execute(
     _quiet_litellm()
     from pruefstand.agent.llm import LiteLLMChat
 
+    specs = build_specs(config, run_id, task_ids, only)
+    if config.payload_set == "holdout" and not specs:
+        # The held-out payloads are written only after the pattern freeze; none yet.
+        # Checked before the run folder exists, so a refused run leaves nothing behind.
+        typer.echo("Refusing: payloads/holdout/ has no payloads for this run.", err=True)
+        raise typer.Exit(2)
     store = RunStore(RUNS_DIR / run_id)
     store.write_config(config)
     loader = MCPMarkTasks()
@@ -109,7 +115,6 @@ def _execute(
         except ParaphraseCacheMissing as exc:
             typer.echo(f"Refusing: {exc}", err=True)
             raise typer.Exit(2) from exc
-    specs = build_specs(config, run_id, task_ids, only)
     info = RunInfo(config=config, config_hash=config.config_hash(), git_commit=git_commit_id())
     quota = QuotaManager(store, config.models)
     clients = {
@@ -334,6 +339,31 @@ def report(
     typer.echo(card_text(build_card(results, cfg.k, cfg.seed)))
     if not text:
         typer.echo(f"\nwrote {write_report(run_dir)}")
+
+
+@app.command()
+def compare(
+    run_a: Path = typer.Argument(..., help="runs/<run_id> of the reference run (A)"),
+    run_b: Path = typer.Argument(..., help="runs/<run_id> of the changed run (B)"),
+) -> None:
+    """Pair two runs episode by episode, print McNemar per condition, write RUN_B/compare.html."""
+    from pruefstand.analysis.compare import compare_runs, comparison_text
+    from pruefstand.report.compare_html import write_compare
+
+    store_a, store_b = RunStore(run_a), RunStore(run_b)
+    # The bootstrap seed comes from run B's config, so the same pair of runs always gives
+    # the same intervals.
+    seed = load_config(store_b.config_path).seed
+    comparison = compare_runs(
+        store_a.read_results(), store_b.read_results(), seed, run_a.name, run_b.name
+    )
+    if not comparison.rows:
+        typer.echo(
+            "no paired episodes: the runs share no (model, task, condition, variant, attempt)"
+        )
+        raise typer.Exit(1)
+    typer.echo(comparison_text(comparison))
+    typer.echo(f"\nwrote {write_compare(comparison, run_b / 'compare.html')}")
 
 
 def _check(ok: bool, label: str, detail: str = "", warn: bool = False) -> bool:

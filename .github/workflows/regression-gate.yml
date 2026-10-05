@@ -1,0 +1,21 @@
+# Regression gate (M4): runs every condition and payload with the scripted LLM against the fake
+# MCP server and fails if any expected outcome in tests/regression/expected_outcomes.json
+# changes. No paid calls, no Docker, no Ollama (SPEC 13).
+name: regression-gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      # Install the project and dev dependencies into .venv.
+      - run: uv sync
+      # The gate itself; -vv prints the scenario diff when an outcome changed.
+      - run: uv run pytest tests/regression -vv

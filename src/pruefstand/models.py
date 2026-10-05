@@ -159,6 +159,9 @@ class EpisodeResult(BaseModel):
     # Every empty reply, re-sampled or not, by kind (docs/notes/empty-replies.md):
     empty_replies_dropped_call: int = 0  # a tool call was generated but lost by the provider
     empty_replies_stopped: int = 0  # the model ended its turn after its reasoning
+    # defense_action events in the episode: removed lines or sentences, hidden tools, pinned
+    # changes, refused calls to hidden tools (M4, DEVIATIONS.md 2026-10-04). 0 without defenses.
+    defense_actions: int = 0
     tokens_in: int
     tokens_out: int
     tokens_cached_in: int = 0  # part of tokens_in served from the provider's prompt cache

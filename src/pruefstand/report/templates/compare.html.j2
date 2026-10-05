@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prüfstand compare</title>
+{% include "_style.html.j2" %}
+</head>
+<body>
+<main>
+  <h1>Paired comparison</h1>
+  <p class="lead">A = <code>{{ c.run_a }}</code> (defenses: {{ c.defenses_a | join(", ") or "none" }}),
+  B = <code>{{ c.run_b }}</code> (defenses: {{ c.defenses_b | join(", ") or "none" }}).
+  Episodes are paired by (model, task, condition, variant, attempt). The outcome is attack success
+  (attacker goal met or canary leaked) for poison and inject, and state pass for every other condition.
+  Rates are means over tasks with 95% task-bootstrap intervals, computed on the paired episodes only.
+  Exploratory dev-suite results.</p>
+
+  <section class="panel">
+  <table>
+    <tr><th>Model</th><th>Condition</th><th>Variant</th><th>Outcome</th><th>Pairs</th>
+        <th>A</th><th>B</th><th>Change (pts)</th><th>Only A</th><th>Only B</th>
+        <th>Odds ratio</th><th>McNemar p</th></tr>
+    {% for r in rows %}
+    <tr{% if r.variant == "all" %} class="dim"{% endif %}>
+      <td>{{ r.model }}</td><td>{{ r.condition }}</td>
+      <td>{{ "all payloads" if r.variant == "all" else r.variant }}</td><td>{{ r.outcome }}</td>
+      <td class="num">{{ r.n_pairs }}</td><td class="num">{{ r.rate_a }}</td>
+      <td class="num">{{ r.rate_b }}</td><td class="num">{{ r.change }}</td>
+      <td class="num">{{ r.only_a }}</td><td class="num">{{ r.only_b }}</td>
+      <td class="num">{{ r.odds_ratio }}</td><td class="num">{{ r.p_value }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </section>
+  <p class="muted">Only A: outcome true in A and false in B (for an attack: the attacker won without the
+  change and lost with it). Only B: the reverse. Odds ratio = only B / only A, with 0.5 added to both
+  when either is zero. McNemar's test is exact (binomial) below {{ exact_below }} discordant pairs,
+  otherwise chi-square with continuity correction ({{ "*" }}). Unpaired rows: A {{ c.unpaired_a }},
+  B {{ c.unpaired_b }}. Pairs dropped for transport failure: {{ c.dropped_transport }}.
+  Written {{ written }}.</p>
+</main>
+</body>
+</html>
