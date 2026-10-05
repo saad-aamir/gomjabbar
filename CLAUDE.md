@@ -4,14 +4,14 @@ Standing instructions for Claude Code working in this repo. Read this file, then
 
 ## What this project is
 
-**Prüfstand: Chaos Testing for Tool-Using AI Agents.** An open-source test bench that runs an agent against a real MCP server many times under controlled stress (repeats, reworded tasks, tool faults, poisoned tools, injected tool output, user pushback) and reports the results with confidence intervals along four dimensions:
+**Gom Jabbar: Chaos Testing for Tool-Using AI Agents.** An open-source test bench that runs an agent against a real MCP server many times under controlled stress (repeats, reworded tasks, tool faults, poisoned tools, injected tool output, user pushback) and reports the results with confidence intervals along four dimensions:
 
 1. **Reliability:** does the agent do the same thing every time?
 2. **Robustness:** how much does it degrade when inputs or tools misbehave?
 3. **Security:** does it follow instructions from untrusted tools?
 4. **Behavioural stability:** does it abandon correct work under pressure?
 
-The first targets are the public **MCPMark** benchmark tasks for the **Filesystem** and **PostgreSQL** MCP servers. MCPMark supplies the tasks and the `verify.py` scripts that check the final state. Prüfstand supplies its own agent loop, a chaos proxy between agent and server, the stress conditions, graders, statistics and reports.
+The first targets are the public **MCPMark** benchmark tasks for the **Filesystem** and **PostgreSQL** MCP servers. MCPMark supplies the tasks and the `verify.py` scripts that check the final state. Gom Jabbar supplies its own agent loop, a chaos proxy between agent and server, the stress conditions, graders, statistics and reports.
 
 `docs/SPEC.md` is the single source of truth. If anything else (including the PRD) disagrees with it, the spec wins.
 
@@ -49,7 +49,7 @@ At the end of each milestone, write `docs/learning/M<n>-walkthrough.md` in plain
 You are most likely in a **Claude Code cloud session**: an Ubuntu 24.04 VM (4 vCPU, 16 GB RAM) that is reclaimed after inactivity. Read `docs/CLOUD.md` once. In short:
 
 - **Commit and push often.** Anything not pushed can vanish when the VM is reclaimed. Push after every passing feature, and use `--checkpoint-every` for runs.
-- **Postgres runs in Docker** (MCPMark's PostgreSQL 17 image; the preinstalled PostgreSQL 16 cannot restore MCPMark's backups). The session hook starts `dockerd`; the sandbox starts the `pruefstand-pg` container on first use.
+- **Postgres runs in Docker** (MCPMark's PostgreSQL 17 image; the preinstalled PostgreSQL 16 cannot restore MCPMark's backups). The session hook starts `dockerd`; the sandbox starts the `pruefstand-pg` container on first use (the container keeps its pre-rename name, see `DEVIATIONS.md`).
 - **No Ollama here.** Cloud runs use API models only. `configs/local.yaml` is for Saad's Mac.
 - **The harness uses paid gpt-oss models through OpenRouter, key in `PFS_OPENROUTER_API_KEY`,** pinned to one upstream provider with fallbacks off (`docs/notes/openrouter.md`). Runs stop cleanly before they would cross the config's `spend_cap_eur` (SPEC 5.5). Never read, set or export `ANTHROPIC_API_KEY`.
 - **Network is an allowlist.** If something you need is blocked (a download host for MCPMark data, for example), stop and tell Saad the exact host. Do not look for workarounds.
@@ -78,19 +78,19 @@ uv run pytest
 uv run ruff check . && uv run ruff format .
 
 # Check the environment: Node/npx, Postgres, API keys, one test call per model, vendored MCPMark
-uv run pruefstand doctor
+uv run gomjabbar doctor
 
 # Small paid smoke run (3 tasks)
-uv run pruefstand pilot --config configs/dev.yaml --tasks 3
+uv run gomjabbar pilot --config configs/dev.yaml --tasks 3
 
 # Full grid from a config, resumable
-uv run pruefstand run --config configs/dev.yaml
+uv run gomjabbar run --config configs/dev.yaml
 
 # HTML report for a run
-uv run pruefstand report runs/<run_id>
+uv run gomjabbar report runs/<run_id>
 
 # Paired comparison of two runs
-uv run pruefstand compare runs/<run_a> runs/<run_b>
+uv run gomjabbar compare runs/<run_a> runs/<run_b>
 ```
 
 ## Stack

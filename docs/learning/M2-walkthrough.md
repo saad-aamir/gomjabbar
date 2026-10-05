@@ -2,7 +2,7 @@
 
 ## What was built
 
-Prüfstand now runs MCPMark's postgres tasks as well as its filesystem tasks: each postgres episode gets its own database, cloned from a template inside MCPMark's own PostgreSQL 17 Docker image, and is graded by MCPMark's `verify.py`. The chaos proxy can break the second tool call of an episode in eight ways (latency, timeout, rpc_error, tool_error, malformed, empty, rate_limit, partial) while the real server still executes it. The redteam model writes three paraphrases per task, each checked by a deterministic literal check and an LLM equivalence check, and caches them so every model sees the same text. Two new conditions use these (paraphrase, fault), and the analysis adds robustness drop, fault recovery and false-success rate with task-level bootstrap intervals, shown in a self-contained `report.html`. Before M2 proper, the M1 rules changed (empty replies re-sampled, temperature 1.0, a hard limit on the key's total spend, 401 handled like missing credit) and the filesystem baseline was re-run under them as the baseline of record.
+Gom Jabbar now runs MCPMark's postgres tasks as well as its filesystem tasks: each postgres episode gets its own database, cloned from a template inside MCPMark's own PostgreSQL 17 Docker image, and is graded by MCPMark's `verify.py`. The chaos proxy can break the second tool call of an episode in eight ways (latency, timeout, rpc_error, tool_error, malformed, empty, rate_limit, partial) while the real server still executes it. The redteam model writes three paraphrases per task, each checked by a deterministic literal check and an LLM equivalence check, and caches them so every model sees the same text. Two new conditions use these (paraphrase, fault), and the analysis adds robustness drop, fault recovery and false-success rate with task-level bootstrap intervals, shown in a self-contained `report.html`. Before M2 proper, the M1 rules changed (empty replies re-sampled, temperature 1.0, a hard limit on the key's total spend, 401 handled like missing credit) and the filesystem baseline was re-run under them as the baseline of record.
 
 ## Results at the gate (dev run `runs/dev-20261003-052646`, exploratory)
 
@@ -25,7 +25,7 @@ The biggest single fault effect is `empty` on 20b (25.0 [5.0, 45.0] points). Par
 
 ## File map
 
-Source (`src/pruefstand/`), new or changed in M2:
+Source (`src/gomjabbar/`), new or changed in M2:
 
 - `agent/loop.py`: empty-reply re-sampling (`_ask_model`, `is_empty_reply`, `empty_reply_kind`), accounting split into `_account`.
 - `agent/llm.py`: 401 and missing credit become an "account" pause (`QuotaExhausted.daily = False`).

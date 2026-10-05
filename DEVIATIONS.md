@@ -10,6 +10,12 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-05: renamed from Prüfstand to Gom Jabbar
+- **What the spec said:** the project is called Prüfstand, the package and CLI `pruefstand`.
+- **What we did instead:** on 2026-10-05 the project was renamed to Gom Jabbar: the package is `src/gomjabbar`, the distribution name in `pyproject.toml` is `gomjabbar`, and the CLI is `gomjabbar` (the `pruefstand` command is gone). README, CLAUDE.md, SPEC, architecture, CLOUD and the learning docs use the new name. `defenses/patterns.py` moved byte-for-byte and the freeze test's hash still matches. Past entries in this file keep saying Prüfstand, and the names listed in the next entry are kept on purpose.
+- **Why:** Saad's decision. The name refers to the Bene Gesserit test in Dune, which fits a bench that pushes agents to act on impulse.
+- **Effect on results:** none. No code path, grader, metric or stored result changed meaning; old runs still load and compare.
+
 ## 2026-10-05: names kept from Prüfstand on purpose after the rename
 - **What the spec said:** the project, package and CLI are renamed from Prüfstand (`pruefstand`) to Gom Jabbar (`gomjabbar`).
 - **What we did instead:** these keep the old name on purpose:

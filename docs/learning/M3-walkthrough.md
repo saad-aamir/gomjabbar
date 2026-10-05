@@ -32,7 +32,7 @@ The larger model is the more vulnerable one to poisoning: it reads tool descript
 
 ## File map
 
-Source (`src/pruefstand/`), new or changed in M3:
+Source (`src/gomjabbar/`), new or changed in M3:
 
 - `proxy/mutators.py`: `resolve_auto_target`, `poison_tools`, `shadow_answer`, `inject_text` (pure functions, one per mutation).
 - `proxy/relay.py`: shadow calls answered without forwarding, tools/list poisoned, inject armed per request and re-armed after an error.

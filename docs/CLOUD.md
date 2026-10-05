@@ -12,7 +12,7 @@ Facts about the environment this repo is built in, and the rules that follow fro
 
 ## The environment Saad configures at claude.ai/code
 
-- **Name:** `pruefstand`
+- **Name:** `gomjabbar` (any name works; an environment created before the rename may still be called `pruefstand`)
 - **Network access:** Custom. Tick "Also include default list of common package managers" (that keeps PyPI, npm, GitHub and Docker Hub) and add `openrouter.ai` to the allowed domains (the model API; `api.groq.com` is no longer needed since 2026-10-03). If MCPMark needs another host (for example to download initial states), add only that host too.
 - **Environment variables:**
   ```

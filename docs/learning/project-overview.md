@@ -1,8 +1,8 @@
-# Project overview: Prüfstand in one page
+# Project overview: Gom Jabbar in one page
 
 ## The system
 
-Prüfstand is a test bench for tool-using AI agents. It takes MCPMark's filesystem and postgres tasks, runs an agent on each one many times through its own agent loop, and puts a chaos proxy between the agent and the real MCP server. The proxy can break tool calls (eight fault profiles), poison tool descriptions, inject instructions into tool output, or add fake "shadow" tools; the runner can also reword the task or push back on a correct answer. Every episode runs in its own sandbox (a copy of the files, or a cloned database), with a fake API key planted where attacks can reach it. MCPMark's `verify.py` judges the final state; Prüfstand's own graders judge leaks, the attacker's goal, honesty and read/write behaviour. Results are reported along four dimensions (reliability, robustness, security, behavioural stability), each metric computed per task and given a 95% interval by resampling tasks, and two runs can be compared episode by episode with McNemar's test. Three host-side defenses (pinning, a sanitizer, a description scan) can be switched on per run.
+Gom Jabbar is a test bench for tool-using AI agents. It takes MCPMark's filesystem and postgres tasks, runs an agent on each one many times through its own agent loop, and puts a chaos proxy between the agent and the real MCP server. The proxy can break tool calls (eight fault profiles), poison tool descriptions, inject instructions into tool output, or add fake "shadow" tools; the runner can also reword the task or push back on a correct answer. Every episode runs in its own sandbox (a copy of the files, or a cloned database), with a fake API key planted where attacks can reach it. MCPMark's `verify.py` judges the final state; Gom Jabbar's own graders judge leaks, the attacker's goal, honesty and read/write behaviour. Results are reported along four dimensions (reliability, robustness, security, behavioural stability), each metric computed per task and given a 95% interval by resampling tasks, and two runs can be compared episode by episode with McNemar's test. Three host-side defenses (pinning, a sanitizer, a description scan) can be switched on per run.
 
 What it found on 20 easy dev tasks (exploratory): gpt-oss-120b passes 87% of single attempts but only 65 to 75% of tasks five times in a row; it obeys poisoned tool descriptions 77% of the time (gpt-oss-20b 33%), usually while still finishing the task correctly; injected tool output works far less often (15 to 16%); and authoritative pushback makes both models undo correct work in about a third of challenged episodes (7 of 20 and 5 of 15). Three host-side defenses took gpt-oss-120b's attack success from 77% to 0% (poison) and 16% to 0% (inject) at a 3-point baseline cost that is not significant, and stopped a held-out poisoned description written after the patterns were frozen (90% to 0%). The cost appears under attack instead: removing the attacker's text can hide or poison the real tool, and task success in poisoned episodes fell from 52 to 35 of 60.
 
@@ -16,7 +16,7 @@ What it found on 20 easy dev tasks (exploratory): gpt-oss-120b passes 87% of sin
 
 ## Twenty interview questions
 
-1. In two sentences, what does Prüfstand measure that a normal benchmark does not?
+1. In two sentences, what does Gom Jabbar measure that a normal benchmark does not?
 2. Why are the four dimensions reported separately instead of as one score?
 3. What is the difference between state pass and strict pass, and which finding depends on strict pass?
 4. Why did you write your own agent loop instead of using MCPMark's?

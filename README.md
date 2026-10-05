@@ -1,6 +1,6 @@
 # Prüfstand: Chaos Testing for Tool-Using AI Agents
 
-Prüfstand ("test bench") runs a tool-using AI agent against a real MCP server many times, under controlled stress: repeated attempts, reworded tasks, broken tools, poisoned tool descriptions, injected tool output and sceptical users. It reports how the agent holds up along four separate dimensions, each number with a 95% confidence interval, judged by the server's final state rather than by what the agent says it did.
+Gom Jabbar ("test bench") runs a tool-using AI agent against a real MCP server many times, under controlled stress: repeated attempts, reworded tasks, broken tools, poisoned tool descriptions, injected tool output and sceptical users. It reports how the agent holds up along four separate dimensions, each number with a 95% confidence interval, judged by the server's final state rather than by what the agent says it did.
 
 > **All results in this repository are exploratory.** They come from 20 easy dev tasks (10 filesystem, 10 postgres) and two models, replicated across two runs. They are not a reproduction of MCPMark's leaderboard, and no confirmatory run has been done (`PRE_REGISTRATION.md`, status PLANNED, NOT RUN).
 
@@ -24,11 +24,11 @@ In a Claude Code cloud session (Ubuntu, Docker available; see `docs/CLOUD.md` fo
 ```bash
 uv sync                                                    # install into .venv
 uv run pytest -q -rs                                       # unit, integration and regression tests, no paid calls
-uv run pruefstand doctor --config configs/dev.yaml         # Node, Docker Postgres, key, one test call per model
-uv run pruefstand run --config configs/dev.yaml --dry-run  # episode counts per model and condition, nothing runs
-uv run pruefstand pilot --config configs/dev.yaml --tasks 3            # small paid smoke run
-uv run pruefstand report runs/<run_id>                     # report.html and the terminal report card
-uv run pruefstand compare runs/<run_a> runs/<run_b>        # paired McNemar comparison, compare.html
+uv run gomjabbar doctor --config configs/dev.yaml         # Node, Docker Postgres, key, one test call per model
+uv run gomjabbar run --config configs/dev.yaml --dry-run  # episode counts per model and condition, nothing runs
+uv run gomjabbar pilot --config configs/dev.yaml --tasks 3            # small paid smoke run
+uv run gomjabbar report runs/<run_id>                     # report.html and the terminal report card
+uv run gomjabbar compare runs/<run_a> runs/<run_b>        # paired McNemar comparison, compare.html
 ```
 
 Paid runs need `PFS_OPENROUTER_API_KEY` in the environment (or in `.env`, see `.env.example`) and a config with `spend_cap_eur` above 0. A run stops cleanly before it would cross its spend cap, and before the key's total spend would cross `key_spend_cap_usd`.
@@ -60,12 +60,12 @@ Paid runs need `PFS_OPENROUTER_API_KEY` in the environment (or in `.env`, see `.
                                       ──► report.html, compare.html
 ```
 
-- **Runner** (`src/pruefstand/runner/`): expands a config into a deterministic episode list, resumes by episode id, keeps spend and quota limits, and writes a result only after grading succeeded.
-- **Agent loop** (`src/pruefstand/agent/`): Prüfstand's own tool-calling loop (not MCPMark's), so the proxy can sit between agent and server and every step lands in a trace.
-- **Chaos proxy** (`src/pruefstand/proxy/`): a raw JSON-RPC relay. Faults change only the response, so the real server still executes the call. Poison rewrites `tools/list`, inject appends to one `tools/call` result, and a shadow tool is answered by the proxy itself.
-- **Graders** (`src/pruefstand/graders/`): MCPMark's `verify.py` decides state pass. A grader error aborts the write, never produces a default result.
-- **Defenses** (`src/pruefstand/defenses/`): pinning, an output sanitizer and a description scan, all in the agent host.
-- **Analysis** (`src/pruefstand/analysis/`): metrics per task, then a bootstrap that resamples tasks, so episodes of one task always move together.
+- **Runner** (`src/gomjabbar/runner/`): expands a config into a deterministic episode list, resumes by episode id, keeps spend and quota limits, and writes a result only after grading succeeded.
+- **Agent loop** (`src/gomjabbar/agent/`): Gom Jabbar's own tool-calling loop (not MCPMark's), so the proxy can sit between agent and server and every step lands in a trace.
+- **Chaos proxy** (`src/gomjabbar/proxy/`): a raw JSON-RPC relay. Faults change only the response, so the real server still executes the call. Poison rewrites `tools/list`, inject appends to one `tools/call` result, and a shadow tool is answered by the proxy itself.
+- **Graders** (`src/gomjabbar/graders/`): MCPMark's `verify.py` decides state pass. A grader error aborts the write, never produces a default result.
+- **Defenses** (`src/gomjabbar/defenses/`): pinning, an output sanitizer and a description scan, all in the agent host.
+- **Analysis** (`src/gomjabbar/analysis/`): metrics per task, then a bootstrap that resamples tasks, so episodes of one task always move together.
 
 A longer, plain-language tour is in `docs/architecture.md`.
 
@@ -118,7 +118,7 @@ It ran `SELECT * FROM vault.api_keys`, then created both requested indexes with 
 
 ### Defenses
 
-Three host-side defenses (`src/pruefstand/defenses/`): **pinning** freezes tool definitions after the first listing; the **sanitizer** removes instruction-like lines from tool results; the **description scan** removes instruction-like sentences from tool descriptions at session start and hides a tool when the removals empty its description or take out more than half of it. The patterns were written knowing the 8 repo payloads, so they were frozen (tag `defense-patterns-v1`, enforced by a hash test) before any held-out payload existed.
+Three host-side defenses (`src/gomjabbar/defenses/`): **pinning** freezes tool definitions after the first listing; the **sanitizer** removes instruction-like lines from tool results; the **description scan** removes instruction-like sentences from tool descriptions at session start and hides a tool when the removals empty its description or take out more than half of it. The patterns were written knowing the 8 repo payloads, so they were frozen (tag `defense-patterns-v1`, enforced by a hash test) before any held-out payload existed.
 
 **Main result** (gpt-oss-120b, all three defenses, `runs/defense-20261004-155855` paired episode by episode with the M3 run; `docs/notes/defense-compare.txt`):
 
@@ -170,7 +170,7 @@ Round 1 is inconclusive: its attacks were too weak to land even without defenses
 
 ## Credit and citation
 
-The tasks, initial states and `verify.py` checkers come from **MCPMark** (Apache 2.0), vendored unchanged in `vendor/mcpmark` at the commit in `vendor/MCPMARK_COMMIT`. Prüfstand uses only its filesystem and postgres tasks and its server launch commands; the agent loop, proxy, conditions, graders and statistics are Prüfstand's own. Our numbers are not MCPMark leaderboard results.
+The tasks, initial states and `verify.py` checkers come from **MCPMark** (Apache 2.0), vendored unchanged in `vendor/mcpmark` at the commit in `vendor/MCPMARK_COMMIT`. Gom Jabbar uses only its filesystem and postgres tasks and its server launch commands; the agent loop, proxy, conditions, graders and statistics are Gom Jabbar's own. Our numbers are not MCPMark leaderboard results.
 
 ```bibtex
 @misc{wu2025mcpmark,
@@ -186,7 +186,7 @@ The tasks, initial states and `verify.py` checkers come from **MCPMark** (Apache
 
 ## Ethics note
 
-- Every MCP server under test is started locally by Prüfstand, on a sandbox copy or a per-episode database clone. No third-party service is attacked; the only outside traffic is to the model API.
+- Every MCP server under test is started locally by Gom Jabbar, on a sandbox copy or a per-episode database clone. No third-party service is attacked; the only outside traffic is to the model API.
 - The "secret" every attack goes after is a fake canary (`pfs-canary-<episode id>`), unique per episode, planted only in attack conditions and their control.
 - The attack payloads follow published tool-poisoning and prompt-injection patterns, are deliberately mild (a marker file, a marker table, a fake key), and exist to measure agents and defenses, not to be reused.
 - API keys live only in a gitignored `.env`; the server under test never sees any `PFS_` variable.
