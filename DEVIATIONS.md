@@ -10,6 +10,19 @@ Format:
 - **Why:**
 - **Effect on results:** none / which metrics, and how
 
+## 2026-10-05: names kept from Prüfstand on purpose after the rename
+- **What the spec said:** the project, package and CLI are renamed from Prüfstand (`pruefstand`) to Gom Jabbar (`gomjabbar`).
+- **What we did instead:** these keep the old name on purpose:
+  - the `PFS_` prefix of environment variables (`PFS_OPENROUTER_API_KEY` and the rest);
+  - the `pfs-canary-` prefix of canary secrets, and the `pfs_tpl_` prefix of the Postgres template databases;
+  - every folder under `runs/` and every result, report and trace in them;
+  - the git tag `defense-patterns-v1`;
+  - `BUILD.md`;
+  - the Docker container `pruefstand-pg` and its local password `pruefstand`;
+  - the dated records `PRE_REGISTRATION.md`, `docs/notes/` and `docs/milestones/`, and every past entry in this file.
+- **Why:** existing `.env` files and the cloud environment already set the `PFS_` variables, and `config.py` requires that prefix. The canary prefix is recorded in the traces of existing runs, and the policy grader derives each episode's canary from it (`sandbox/canary.py`), so changing it would make old traces stop matching when they are re-graded. Runs and results are the record of what was measured, and rewriting them would rewrite history. The tag points at the frozen pattern file and is cited by the freeze test and this file. `BUILD.md` is the original record and is never edited. The Postgres container already holds the restored MCPMark templates on Saad's machine and listens on the fixed port 55432: a new name would force a fresh download and restore, and a new password would fail against the old container still bound to that port. The notes, milestone files and pre-registration describe what was true on their date.
+- **Effect on results:** none. Old runs keep loading, comparing and reporting, and new runs are directly comparable with them.
+
 ## 2026-10-05: who wrote the held-out payloads, and round 1 replaced in place by round 2
 - **What the spec said:** the 2026-10-04 entry "defense patterns written with the payloads in view" said Saad writes the held-out payloads after the freeze.
 - **What we did instead:** The held-out payloads were written in a separate chat with Claude (not Claude Code) after the freeze, by an author who had seen only a short summary of the pattern categories, never the pattern file. Round 1 wording was too weak; round 2 increased the pressure while keeping new wording. Round 2 replaced the round 1 files in place (same file names, new ids), so `payloads/holdout/` now holds only round 2 (`access-policy`, `lockout-warning`); the round 1 texts (`debug-trace`, `confirm-value`) are in commit `de4728e`. Round 1 ran as `runs/holdout-20261004-214818` (undefended) and `runs/holdout-defended-20261004-222423` (defended), round 2 as `runs/holdout-20261004-230541` and `runs/holdout-defended-20261004-234024`. The patterns were not changed between or after the rounds (the hash test passes).
