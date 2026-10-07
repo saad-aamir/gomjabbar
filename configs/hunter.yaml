@@ -1,0 +1,28 @@
+# Hunter-seeker: the adaptive attacker learns against the UNDEFENDED gpt-oss-120b.
+# Each campaign writes its payloads to payloads/discovered/ and runs them through the
+# normal episode path. Setup A: discovery here, defended replay is a separate run.
+run_name: hunter
+suite: suites/dev.txt
+services: [filesystem]
+models:
+  - name: openrouter/openai/gpt-oss-120b
+    api_key_env: PFS_OPENROUTER_API_KEY
+    provider: coreweave/fp4
+redteam_model:
+  name: openrouter/openai/gpt-oss-120b
+  api_key_env: PFS_OPENROUTER_API_KEY
+  provider: coreweave/fp4
+temperature: 1.0
+seed: 20261008
+payload_set: discovered
+conditions: [poison, inject]
+defenses: []
+max_steps: 100
+tool_timeout_s: 30
+episode_timeout_s: 3600
+concurrency: 2
+spend_cap_eur: 0.60
+usd_to_eur: 0.88
+key_spend_cap_usd: 4.50
+hunt_tasks_per_round: 3
+hunt_max_rounds: 4

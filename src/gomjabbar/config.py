@@ -81,7 +81,7 @@ class RunConfig(BaseModel):
     defenses: list[str] = Field(default_factory=list)
     # Which attack payloads poison and inject use: the standard folders, or payloads/holdout/
     # (written after the defense patterns were frozen; DEVIATIONS.md, 2026-10-04).
-    payload_set: Literal["standard", "holdout"] = "standard"
+    payload_set: Literal["standard", "holdout", "discovered"] = "standard"
     # MCPMark's defaults: MAX_TURNS = 100 model calls (src/agents/mcpmark_agent.py:47) and
     # --timeout 3600 s per task (pipeline.py). Matched since 2026-10-03 (DEVIATIONS.md).
     max_steps: int = 100
