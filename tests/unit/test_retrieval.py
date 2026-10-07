@@ -1,6 +1,6 @@
 """Tests for the BM25 retrieval over the attack-technique library."""
 
-from gomjabbar.redteam.retrieval import BM25, Document
+from gomjabbar.redteam.retrieval import BM25, Document, load_library
 
 # Three toy notes with clearly different topics, so we know what SHOULD match.
 DOCS = [
@@ -31,9 +31,6 @@ def test_shadow_query_finds_the_shadow_note():
     index = BM25(DOCS)
     results = index.top("a fake shadow tool", k=1)
     assert results[0].id == "shadow"
-
-
-from gomjabbar.redteam.retrieval import load_library
 
 
 def test_library_loads_the_real_notes():
