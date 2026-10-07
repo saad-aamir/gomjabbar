@@ -14,7 +14,7 @@ redteam_model:
   provider: coreweave/fp4
 temperature: 1.0
 seed: 20261008
-payload_set: discovered
+payload_set: holdout
 conditions: [poison, inject]
 defenses: []
 max_steps: 100
