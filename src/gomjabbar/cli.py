@@ -365,6 +365,15 @@ def compare(
     typer.echo(comparison_text(comparison))
     typer.echo(f"\nwrote {write_compare(comparison, run_b / 'compare.html')}")
 
+@app.command()
+def hunt(
+    config: Path = typer.Option(..., help="hunter config YAML"),
+) -> None:
+    """Run Hunter-seeker: an adaptive attacker that learns against the undefended agent."""
+    from gomjabbar.redteam.hunt import hunt as run_hunt
+
+    run_hunt(config)
+
 
 def _check(ok: bool, label: str, detail: str = "", warn: bool = False) -> bool:
     mark = "ok  " if ok else ("warn" if warn else "FAIL")
