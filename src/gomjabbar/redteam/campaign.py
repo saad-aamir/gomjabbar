@@ -9,7 +9,12 @@ How: Pydantic models, built by the campaign loop (campaign.py) round by round.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import BaseModel
+
+from gomjabbar.redteam.retrieval import BM25, load_library
+from gomjabbar.redteam.runner_bridge import run_one_attack
 
 
 class AttackRound(BaseModel):
@@ -46,3 +51,44 @@ class Campaign(BaseModel):
     @property
     def rounds_used(self) -> int:
         return len(self.rounds)
+
+
+
+# Build the retrieval index once from the library. Reused across campaigns.
+_INDEX = BM25(load_library())
+
+
+def run_campaign(
+    goal: str,
+    mode: str,                       # "poison" or "inject"
+    base_config: Path,
+    propose_payload,                 # the attacker's brain: (goal, mode, techniques, history) -> yaml str
+    n_tasks: int = 3,
+    max_rounds: int = 4,
+    target_model: str = "openrouter/openai/gpt-oss-120b",
+) -> Campaign:
+    """One campaign: let the attacker refine an attack for up to max_rounds, stop on a win."""
+    campaign = Campaign(goal=goal, target_model=target_model)
+    for round_index in range(max_rounds):
+        # 1. Retrieve the techniques most relevant to this goal (the RAG step).
+        techniques = [doc.id for doc in _INDEX.top(goal, k=3)]
+        # 2. Ask the attacker for a payload, given the goal, the techniques, and what it has
+        #    already tried (campaign.rounds). This is the only step that "thinks".
+        payload_text = propose_payload(goal, mode, techniques, campaign.rounds)
+        # 3. Run it through the real attack path and count wins.
+        won, total = run_one_attack(base_config, mode, payload_text, n_tasks)
+        # 4. Record what happened this round.
+        campaign.rounds.append(
+            AttackRound(
+                round_index=round_index,
+                mode=mode,
+                payload_text=payload_text,
+                techniques=techniques,
+                episodes_run=total,
+                episodes_won=won,
+            )
+        )
+        # 5. Stop as soon as a round wins on every episode: a reliable attack was found.
+        if campaign.rounds[-1].succeeded:
+            break
+    return campaign
