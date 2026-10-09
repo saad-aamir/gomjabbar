@@ -92,3 +92,19 @@ def wrap_payload(sentence: str, mode: str) -> str:
         raise ValueError(f"unknown mode {mode!r}")
     # sort_keys=False keeps the order readable; default_flow_style=False is block YAML.
     return yaml.safe_dump(payload, sort_keys=False, default_flow_style=False)
+
+def propose_payload(
+    goal: str,
+    mode: str,
+    techniques: list[str],
+    history: list[AttackRound],
+    model_call,            # a function: (prompt str) -> sentence str. Passed in, so tests fake it.
+) -> str:
+        """Ask the red-team model for one attack sentence, then wrap it in a valid payload file."""
+        prompt = build_prompt(goal, mode, techniques, history)   # Part 1
+        sentence = model_call(prompt)                            # the one model call
+        # Models sometimes wrap a line in quotes or add a stray prefix; keep just the first
+        # non-empty line and strip surrounding quotes, so the wrapper gets a clean sentence.
+        first_line = next((ln.strip() for ln in sentence.splitlines() if ln.strip()), "")
+        cleaned = first_line.strip('"').strip("'")
+        return wrap_payload(cleaned, mode)                       # Part 2
