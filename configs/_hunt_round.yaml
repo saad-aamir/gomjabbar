@@ -1,6 +1,6 @@
 concurrency: 2
 conditions:
-- poison
+- inject
 defenses: []
 episode_timeout_s: 3600
 hunt_max_rounds: 6
