@@ -46,7 +46,11 @@ def run_one_attack(
     cfg["run_name"] = "hunt-round"
     cfg["conditions"] = [mode]
     # We trim tasks by writing a temp suite file with only the first n_tasks lines.
-    suite_lines = Path(cfg["suite"]).read_text().splitlines()
+    # Keep only real task lines: skip blanks and comment lines, then take the first n_tasks.
+    suite_lines = [
+        ln for ln in Path(cfg["suite"]).read_text().splitlines()
+        if ln.strip() and not ln.strip().startswith("#") and "file_splitting" not in ln
+    ]
     tmp_suite = REPO_ROOT / "suites" / "_hunt_round.txt"
     tmp_suite.write_text("\n".join(suite_lines[:n_tasks]) + "\n")
     cfg["suite"] = str(tmp_suite.relative_to(REPO_ROOT))

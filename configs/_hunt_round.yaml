@@ -8,14 +8,15 @@ hunt_tasks_per_round: 3
 key_spend_cap_usd: 4.5
 max_steps: 100
 models:
-- api_key_env: PFS_OPENROUTER_API_KEY
-  name: openrouter/openai/gpt-oss-120b
-  provider: coreweave/fp4
-payload_set: holdout
-redteam_model:
+- &id001
   api_key_env: PFS_OPENROUTER_API_KEY
+  free_tier: false
   name: openrouter/openai/gpt-oss-120b
+  price_usd_per_mtok: 0.17
   provider: coreweave/fp4
+  rpm_limit: 60
+payload_set: holdout
+redteam_model: *id001
 run_name: hunt-round
 seed: 20261008
 services:
