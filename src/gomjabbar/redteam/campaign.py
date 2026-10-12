@@ -49,6 +49,11 @@ class Campaign(BaseModel):
         return any(r.succeeded for r in self.rounds)
 
     @property
+    def best_won(self) -> int:
+        """The most tasks any single round won: the attacker's high-water mark."""
+        return max((r.episodes_won for r in self.rounds), default=0)
+
+    @property
     def rounds_used(self) -> int:
         return len(self.rounds)
 

@@ -26,4 +26,4 @@ spend_cap_eur: 0.6
 usd_to_eur: 0.88
 key_spend_cap_usd: 4.5
 hunt_tasks_per_round: 3
-hunt_max_rounds: 4
+hunt_max_rounds: 6

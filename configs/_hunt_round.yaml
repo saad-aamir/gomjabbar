@@ -3,7 +3,7 @@ conditions:
 - poison
 defenses: []
 episode_timeout_s: 3600
-hunt_max_rounds: 4
+hunt_max_rounds: 6
 hunt_tasks_per_round: 3
 key_spend_cap_usd: 4.5
 max_steps: 100
