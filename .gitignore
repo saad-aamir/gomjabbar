@@ -22,3 +22,6 @@ cache/*
 
 # Episode sandboxes, in case keep_sandboxes points them inside the repo.
 tmp/
+
+configs/_hunt_round.yaml
+suites/_hunt_round.txt
