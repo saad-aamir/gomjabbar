@@ -1,0 +1,8 @@
+2026-10-09T02:08:50Z run start: 3 specs, 3 to do
+2026-10-09T02:08:50Z [945725d772194b6c] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/file_splitting poison poison-holdout-hunt #0
+2026-10-09T02:08:50Z [52136e9603c06f47] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/pattern_matching poison poison-holdout-hunt #0
+2026-10-09T02:09:31Z [52136e9603c06f47] done passed=True claim=done stop=final_answer steps=8 41.604s
+2026-10-09T02:09:31Z [259e0222d576198d] start openrouter/openai/gpt-oss-120b filesystem/easy/file_context/uppercase poison poison-holdout-hunt #0
+2026-10-09T02:10:57Z [259e0222d576198d] done passed=True claim=done stop=final_answer steps=21 85.965s
+2026-10-09T02:21:13Z [945725d772194b6c] done passed=False claim=none stop=max_steps steps=100 743.739s
+2026-10-09T02:21:13Z run stop: 3/3 done, paused=[]
