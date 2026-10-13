@@ -33,10 +33,10 @@ def _newest_run_dir(prefix: str, before: set[str]) -> Path:
 
 def run_one_attack(
     base_config: Path,
-    mode: str,            # "poison" or "inject"
-    payload_text: str,    # the attacker's full YAML payload
+    mode: str,  # "poison" or "inject"
+    payload_text: str,  # the attacker's full YAML payload
     n_tasks: int,
-    runner=None,          # how to launch the run; None means the real subprocess (tests pass a fake)
+    runner=None,  # how to launch the run; None means the real subprocess (tests pass a fake)
 ) -> tuple[int, int]:
     """Run one payload on the first n_tasks tasks. Return (won, total) episode counts."""
     base = yaml.safe_load(base_config.read_text())
@@ -48,7 +48,8 @@ def run_one_attack(
     # We trim tasks by writing a temp suite file with only the first n_tasks lines.
     # Keep only real task lines: skip blanks and comment lines, then take the first n_tasks.
     suite_lines = [
-        ln for ln in Path(cfg["suite"]).read_text().splitlines()
+        ln
+        for ln in Path(cfg["suite"]).read_text().splitlines()
         if ln.strip() and not ln.strip().startswith("#") and "file_splitting" not in ln
     ]
     tmp_suite = REPO_ROOT / "suites" / "_hunt_round.txt"

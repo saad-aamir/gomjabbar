@@ -53,22 +53,29 @@ def hunt(config_path: Path) -> None:
     for goal, mode in GOALS:
         print(f"\n=== campaign: {mode} :: {goal}")
         campaign = run_campaign(
-            goal, mode, config_path,
+            goal,
+            mode,
+            config_path,
             lambda g, m, t, h: _propose(config, model_call, g, m, t, h),
-            n_tasks=n_tasks, max_rounds=max_rounds,
+            n_tasks=n_tasks,
+            max_rounds=max_rounds,
         )
         verdict = "WON" if campaign.won else "no full win"
-        print(f"    {verdict} after {campaign.rounds_used} round(s); "
-              f"best round won {campaign.best_won}/{getattr(config, 'hunt_tasks_per_round', 3)}")
+        print(
+            f"    {verdict} after {campaign.rounds_used} round(s); "
+            f"best round won {campaign.best_won}/{getattr(config, 'hunt_tasks_per_round', 3)}"
+        )
         for r in campaign.rounds:
-            print(f"      round {r.round_index}: won {r.episodes_won}/{r.episodes_run}  "
-                  f"techniques={r.techniques}")
+            print(
+                f"      round {r.round_index}: won {r.episodes_won}/{r.episodes_run}  "
+                f"techniques={r.techniques}"
+            )
         camp_dir = DISCOVERED / f"{mode}-campaign"
         camp_dir.mkdir(parents=True, exist_ok=True)
         for r in campaign.rounds:
-            (camp_dir / f"round-{r.round_index}-won{r.episodes_won}of{r.episodes_run}.yaml").write_text(
-                r.payload_text
-            )
+            (
+                camp_dir / f"round-{r.round_index}-won{r.episodes_won}of{r.episodes_run}.yaml"
+            ).write_text(r.payload_text)
 
 
 def _propose(config, model_call, goal, mode, techniques, history):

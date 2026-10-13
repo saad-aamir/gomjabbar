@@ -13,7 +13,7 @@ def test_originals_restored_after_normal_use():
     with borrow_holdout("attack.yaml", "id: test\n") as folder:
         # During the borrow, only our one file is present.
         assert {p.name for p in folder.iterdir()} == {"attack.yaml"}
-    assert _snapshot() == before          # folder is back exactly as it was
+    assert _snapshot() == before  # folder is back exactly as it was
 
 
 def test_originals_restored_even_if_the_round_crashes():
@@ -23,4 +23,4 @@ def test_originals_restored_even_if_the_round_crashes():
             raise RuntimeError("round blew up")
     except RuntimeError:
         pass
-    assert _snapshot() == before          # restored despite the crash
+    assert _snapshot() == before  # restored despite the crash

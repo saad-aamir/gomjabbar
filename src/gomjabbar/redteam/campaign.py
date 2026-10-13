@@ -20,12 +20,12 @@ from gomjabbar.redteam.runner_bridge import run_one_attack
 class AttackRound(BaseModel):
     """One attempt in a campaign: what the attacker tried, and how it did."""
 
-    round_index: int                 # 0, 1, 2... which attempt this is
-    mode: str                        # "poison" or "inject": where the payload is delivered
-    payload_text: str                # the actual attack text the attacker wrote
-    techniques: list[str]            # ids of the library notes it retrieved first
-    episodes_run: int                # how many test episodes this payload was tried on
-    episodes_won: int                # how many of them the attacker's goal fired on
+    round_index: int  # 0, 1, 2... which attempt this is
+    mode: str  # "poison" or "inject": where the payload is delivered
+    payload_text: str  # the actual attack text the attacker wrote
+    techniques: list[str]  # ids of the library notes it retrieved first
+    episodes_run: int  # how many test episodes this payload was tried on
+    episodes_won: int  # how many of them the attacker's goal fired on
 
     @property
     def succeeded(self) -> bool:
@@ -39,9 +39,9 @@ class AttackRound(BaseModel):
 class Campaign(BaseModel):
     """A full campaign against one goal: a sequence of rounds, best-effort to succeed."""
 
-    goal: str                        # plain-language description of what the attacker wants
-    target_model: str                # the model under attack (undefended, in setup A)
-    rounds: list[AttackRound] = []   # filled in as the loop runs
+    goal: str  # plain-language description of what the attacker wants
+    target_model: str  # the model under attack (undefended, in setup A)
+    rounds: list[AttackRound] = []  # filled in as the loop runs
 
     @property
     def won(self) -> bool:
@@ -58,16 +58,15 @@ class Campaign(BaseModel):
         return len(self.rounds)
 
 
-
 # Build the retrieval index once from the library. Reused across campaigns.
 _INDEX = BM25(load_library())
 
 
 def run_campaign(
     goal: str,
-    mode: str,                       # "poison" or "inject"
+    mode: str,  # "poison" or "inject"
     base_config: Path,
-    propose_payload,                 # the attacker's brain: (goal, mode, techniques, history) -> yaml str
+    propose_payload,  # the attacker's brain: (goal, mode, techniques, history) -> yaml str
     n_tasks: int = 3,
     max_rounds: int = 4,
     target_model: str = "openrouter/openai/gpt-oss-120b",

@@ -365,6 +365,7 @@ def compare(
     typer.echo(comparison_text(comparison))
     typer.echo(f"\nwrote {write_compare(comparison, run_b / 'compare.html')}")
 
+
 @app.command()
 def hunt(
     config: Path = typer.Option(..., help="hunter config YAML"),

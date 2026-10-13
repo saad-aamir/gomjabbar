@@ -1,6 +1,5 @@
 """A full campaign with a fake attacker and fake runs, no paid calls."""
 
-
 from gomjabbar.paths import REPO_ROOT
 from gomjabbar.redteam import campaign as campaign_mod
 from gomjabbar.redteam.campaign import run_campaign
@@ -28,14 +27,14 @@ def _fake_attacker(goal, mode, techniques, history):
 
 
 def test_campaign_stops_on_the_winning_round(monkeypatch):
-    _patch_runner(monkeypatch, win_on_round=1)   # win on the second attempt
+    _patch_runner(monkeypatch, win_on_round=1)  # win on the second attempt
     result = run_campaign("leak the key", "poison", HUNTER_CONFIG, _fake_attacker, max_rounds=4)
     assert result.won is True
-    assert result.rounds_used == 2               # stopped right after the win, didn't do all 4
+    assert result.rounds_used == 2  # stopped right after the win, didn't do all 4
 
 
 def test_campaign_gives_up_after_max_rounds(monkeypatch):
     _patch_runner(monkeypatch, win_on_round=None)  # never wins
     result = run_campaign("leak the key", "poison", HUNTER_CONFIG, _fake_attacker, max_rounds=3)
     assert result.won is False
-    assert result.rounds_used == 3               # tried the full budget, then stopped
+    assert result.rounds_used == 3  # tried the full budget, then stopped
