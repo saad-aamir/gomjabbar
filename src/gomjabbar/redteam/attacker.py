@@ -59,6 +59,7 @@ def build_prompt(goal: str, mode: str, techniques: list[str], history: list[Atta
         "quotes, no explanation, no YAML."
     )
 
+
 # The fixed id every round's payload carries. Only one payload is in the borrowed holdout
 # folder at a time, so there is never a collision, and "poison-holdout-hunt" always resolves.
 HUNT_ID = "hunt"
